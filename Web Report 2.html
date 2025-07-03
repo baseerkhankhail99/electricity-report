@@ -1248,7 +1248,6 @@
                                     if (context.parsed.y !== null) {
                                         label += context.parsed.y.toFixed(2) + ' kWh';
                                     }
-                                    return label;
                                 }
                             }
                         }
@@ -1350,7 +1349,7 @@
 
 
                 populateFilters(fullReportData);
-                applyFilters(); // Apply initial filters to render report
+                resetFilters(); // <--- Call resetFilters AFTER filters are populated. This will tick 'All'
                 
             } catch (error) {
                 console.error('Error fetching or processing data:', error);
@@ -1431,10 +1430,6 @@
             resetFiltersBtn.addEventListener('click', resetFilters);
             downloadReportBtn.addEventListener('click', downloadReport);
             printReportBtn.addEventListener('click', () => window.print());
-
-            // Initial state for "All Months" and "All Meters"
-            document.getElementById('month_all').checked = true;
-            document.getElementById('meter_all').checked = true;
         });
 
     </script>
