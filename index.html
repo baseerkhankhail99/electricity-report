@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Consumption Report</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Electricity Consumption Report</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
         body {
             font-family: "Inter", sans-serif;
             background-color: #f0f2f5;
@@ -381,114 +382,100 @@
             }
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100 p-4 sm:p-6 lg:p-8">
-    <div class="container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Electricity Consumption Report</h1>
-
-        <div id="messageArea" class="message-box hidden"></div>
-
-        <div class="filter-section">
-            <div class="filter-group" id="yearFilterGroup">
-                <label for="yearFilter" class="text-gray-700">Year:</label>
-                <select id="yearFilter" class="rounded-lg shadow-sm"></select>
-            </div>
-
-            <div class="filter-group" id="monthFilterGroup">
-                <label class="text-gray-700">Months:</label>
-                <div class="custom-select-container">
-                    <div id="monthSelectTrigger" class="custom-select-trigger rounded-lg shadow-sm">
+<div class="container">
+<h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Electricity Consumption Report</h1>
+<div class="message-box hidden" id="messageArea"></div>
+<div class="filter-section">
+<div class="filter-group" id="yearFilterGroup">
+<label class="text-gray-700" for="yearFilter">Year:</label>
+<select class="rounded-lg shadow-sm" id="yearFilter"></select>
+</div>
+<div class="filter-group" id="monthFilterGroup">
+<label class="text-gray-700">Months:</label>
+<div class="custom-select-container">
+<div class="custom-select-trigger rounded-lg shadow-sm" id="monthSelectTrigger">
                         Select Months
                     </div>
-                    <div id="monthSelectOptions" class="custom-select-options">
-                        <input type="text" id="monthSearchInput" class="search-input" placeholder="Search months...">
-                    </div>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <label class="text-gray-700">Meters:</label>
-                <div class="custom-select-container">
-                    <div id="meterSelectTrigger" class="custom-select-trigger rounded-lg shadow-sm">
+<div class="custom-select-options" id="monthSelectOptions">
+<input class="search-input" id="monthSearchInput" placeholder="Search months..." type="text"/>
+</div>
+</div>
+</div>
+<div class="filter-group">
+<label class="text-gray-700">Meters:</label>
+<div class="custom-select-container">
+<div class="custom-select-trigger rounded-lg shadow-sm" id="meterSelectTrigger">
                         Select Meters
                     </div>
-                    <div id="meterSelectOptions" class="custom-select-options">
-                        <input type="text" id="meterSearchInput" class="search-input" placeholder="Search meters...">
-                    </div>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <label for="chartTypeFilter" class="text-gray-700">Chart Type:</label>
-                <select id="chartTypeFilter" class="rounded-lg shadow-sm">
-                    <option value="line">Line Chart</option>
-                    <option value="bar">Bar Chart</option>
-                    <option value="doughnut">Doughnut Chart</option>
-                    <option value="pie">Pie Chart</option>
-                    <option value="polarArea">Polar Area Chart</option>
-                    <option value="radar">Radar Chart</option>
-                </select>
-            </div>
-
-            <div class="checkbox-row">
-                <div class="filter-group filter-checkbox-group">
-                    <input type="checkbox" id="showChangeColumns" class="rounded text-indigo-600 focus:ring-indigo-500">
-                    <label for="showChangeColumns" class="text-gray-700 font-normal">Show MoM/YoY Changes</label>
-                </div>
-
-                <div class="filter-group filter-checkbox-group">
-                    <input type="checkbox" id="showSummaryMetrics" class="rounded text-indigo-600 focus:ring-indigo-500">
-                    <label for="showSummaryMetrics" class="text-gray-700 font-normal">Show Summary Statistics</label>
-                </div>
-
-                <div class="filter-group filter-checkbox-group">
-                    <input type="checkbox" id="showAnomalyDetection" class="rounded text-red-600 focus:ring-red-500">
-                    <label for="showAnomalyDetection" class="text-gray-700 font-normal">Enable Anomaly Detection</label>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button id="applyFilters" class="btn-primary">Apply Filters</button>
-                <button id="resetFiltersBtn" class="btn-secondary">Reset Filters</button>
-                <button id="downloadReportBtn" class="btn-secondary">Download Filtered Data (Excel)</button>
-                <button id="printReportBtn" class="btn-secondary">Print Report</button>
-            </div>
-        </div>
-
-        <div id="anomalyAlerts" class="anomaly-alerts hidden">
-            <h3>&#9888; Anomaly Alerts</h3>
-            <div id="anomalyList"></div>
-        </div>
-
-        <div id="summaryMetrics" class="summary-card hidden">
-            <h3 class="col-span-full text-center text-lg font-bold text-gray-800 mb-2">Summary Statistics (Filtered Data)</h3>
-            <div class="summary-item">
-                <strong>Overall Total Consumption:</strong> <span id="overallTotalConsumptionValue">0.00</span>
-            </div>
-        </div>
-
-        <div id="reportContainer" class="rounded-lg report-table-wrapper">
-            <table id="reportTable" class="report-table">
-                <thead>
-                    <tr id="tableHeaderTransformerRow">
-                    </tr>
-                    <tr id="tableHeaderMeterRow">
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr><td colspan="5" class="no-data">Loading data from Google Sheet...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div id="chartSection" class="chart-container hidden">
-            <canvas id="consumptionChart"></canvas>
-        </div>
-    </div>
-
-    <script>
+<div class="custom-select-options" id="meterSelectOptions">
+<input class="search-input" id="meterSearchInput" placeholder="Search meters..." type="text"/>
+</div>
+</div>
+</div>
+<div class="filter-group">
+<label class="text-gray-700" for="chartTypeFilter">Chart Type:</label>
+<select class="rounded-lg shadow-sm" id="chartTypeFilter">
+<option value="line">Line Chart</option>
+<option value="bar">Bar Chart</option>
+<option value="doughnut">Doughnut Chart</option>
+<option value="pie">Pie Chart</option>
+<option value="polarArea">Polar Area Chart</option>
+<option value="radar">Radar Chart</option>
+</select>
+</div>
+<div class="checkbox-row">
+<div class="filter-group filter-checkbox-group">
+<input class="rounded text-indigo-600 focus:ring-indigo-500" id="showChangeColumns" type="checkbox"/>
+<label class="text-gray-700 font-normal" for="showChangeColumns">Show MoM/YoY Changes</label>
+</div>
+<div class="filter-group filter-checkbox-group">
+<input class="rounded text-indigo-600 focus:ring-indigo-500" id="showSummaryMetrics" type="checkbox"/>
+<label class="text-gray-700 font-normal" for="showSummaryMetrics">Show Summary Statistics</label>
+</div>
+<div class="filter-group filter-checkbox-group">
+<input class="rounded text-red-600 focus:ring-red-500" id="showAnomalyDetection" type="checkbox"/>
+<label class="text-gray-700 font-normal" for="showAnomalyDetection">Enable Anomaly Detection</label>
+</div>
+</div>
+<div class="button-group">
+<button class="btn-primary" id="applyFilters">Apply Filters</button>
+<button class="btn-secondary" id="resetFiltersBtn">Reset Filters</button>
+<button class="btn-secondary" id="downloadReportBtn">Download Filtered Data (Excel)</button>
+<button class="btn-secondary" id="printReportBtn">Print Report</button>
+</div>
+</div>
+<div class="anomaly-alerts hidden" id="anomalyAlerts">
+<h3>⚠ Anomaly Alerts</h3>
+<div id="anomalyList"></div>
+</div>
+<div class="summary-card hidden" id="summaryMetrics">
+<h3 class="col-span-full text-center text-lg font-bold text-gray-800 mb-2">Summary Statistics (Filtered Data)</h3>
+<div class="summary-item">
+<strong>Overall Total Consumption:</strong> <span id="overallTotalConsumptionValue">0.00</span>
+</div>
+</div>
+<div class="rounded-lg report-table-wrapper" id="reportContainer">
+<table class="report-table" id="reportTable">
+<thead>
+<tr id="tableHeaderTransformerRow">
+</tr>
+<tr id="tableHeaderMeterRow">
+</tr>
+</thead>
+<tbody id="tableBody">
+<tr><td class="no-data" colspan="5">Loading data from Google Sheet...</td></tr>
+</tbody>
+</table>
+</div>
+<div class="chart-container hidden" id="chartSection">
+<canvas id="consumptionChart"></canvas>
+</div>
+</div>
+<script>
         // *** IMPORTANT: This URL is your Google Apps Script Web App URL, which acts as a CORS proxy. ***
         // It fetches the original Google Sheet CSV data and adds necessary CORS headers.
         const GOOGLE_SHEET_CSV_URL = 'https://proxy.cors.sh/' + encodeURIComponent('https://script.google.com/macros/s/AKfycbz7lidciBT-Yz4nesxZ1s23gDvnCMWxL60CpvENMUYorVtGoKBryb24zp-omMgPhjPszA/exec');
@@ -1371,5 +1358,57 @@
         // Initialize on load
         document.addEventListener('DOMContentLoaded', fetchGoogleSheetData);
     </script>
-</body>
+<script>
+const scriptURL = 'https://script.google.com/macros/s/AKfycbz7lidciBT-Yz4nesxZ1s23gDvnCMWxL60CpvENMUYorVtGoKBryb24zp-omMgPhjPszA/exec';
+
+fetch(scriptURL)
+  .then(response => {
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.text();
+  })
+  .then(csv => {
+    const rows = csv.trim().split('\n').map(row => row.split(','));
+    const tableHead = document.getElementById('table-head');
+    const tableBody = document.getElementById('table-body');
+    tableHead.innerHTML = '';
+    tableBody.innerHTML = '';
+
+    // Create table headers
+    const headers = rows[0];
+    const headerRow = document.createElement('tr');
+    headers.forEach(header => {
+      const th = document.createElement('th');
+      th.textContent = header;
+      headerRow.appendChild(th);
+    });
+    tableHead.appendChild(headerRow);
+
+    // Create table rows
+    let totalConsumption = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const row = document.createElement('tr');
+      rows[i].forEach((cell, index) => {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        row.appendChild(td);
+
+        if (headers[index].toLowerCase().includes('consumption')) {
+          const value = parseFloat(cell);
+          if (!isNaN(value)) totalConsumption += value;
+        }
+      });
+      tableBody.appendChild(row);
+    }
+
+    const totalElem = document.getElementById('total-consumption');
+    if (totalElem) {
+      totalElem.textContent = totalConsumption.toFixed(2);
+    }
+  })
+  .catch(error => {
+    console.error('Fetch error:', error);
+    const tableBody = document.getElementById('table-body');
+    tableBody.innerHTML = `<tr><td colspan="5">Error loading data: ${error.message}</td></tr>`;
+  });
+</script></body>
 </html>
