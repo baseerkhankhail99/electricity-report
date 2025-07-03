@@ -312,7 +312,7 @@
                 border-radius: 0; /* No border-radius in print */
             }
             .filter-section, .button-group, .checkbox-row { /* Hide filters and buttons when printing */
-                display: none; 
+                display: none;
             }
             h1 {
                 font-size: 1.5rem; /* Smaller title for print */
@@ -407,7 +407,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="filter-group">
                 <label class="text-gray-700">Meters:</label>
                 <div class="custom-select-container">
@@ -419,7 +419,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="filter-group">
                 <label for="chartTypeFilter" class="text-gray-700">Chart Type:</label>
                 <select id="chartTypeFilter" class="rounded-lg shadow-sm">
@@ -431,7 +431,7 @@
                     <option value="radar">Radar Chart</option>
                 </select>
             </div>
-            
+
             <div class="checkbox-row">
                 <div class="filter-group filter-checkbox-group">
                     <input type="checkbox" id="showChangeColumns" class="rounded text-indigo-600 focus:ring-indigo-500">
@@ -491,7 +491,7 @@
     <script>
         // *** IMPORTANT: This URL is your Google Apps Script Web App URL, which acts as a CORS proxy. ***
         // It fetches the original Google Sheet CSV data and adds necessary CORS headers.
-        const GOOGLE_SHEET_CSV_URL = 'https://script.google.com/macros/s/AKfycbz7lidciBT-Yz4nesxZ1s23gDvnCMWxL60CpvENMUYorVtGoKBryb24zp-omMgPhjPszA/exec';
+        const GOOGLE_SHEET_CSV_URL = 'https://proxy.cors.sh/' + encodeURIComponent('https://script.google.com/macros/s/AKfycbz7lidciBT-Yz4nesxZ1s23gDvnCMWxL60CpvENMUYorVtGoKBryb24zp-omMgPhjPszA/exec');
         const TARGET_SHEET_NAME = 'Monthly_Summary'; // This might not be used directly when fetching CSV via Apps Script, but kept for context
 
         let fullReportData = []; // Stores the entire parsed Google Sheet data with MoM/YoY
@@ -535,8 +535,7 @@
         ];
 
         // Anomaly detection threshold (percentage deviation from average of previous 3 months)
-        const ANOMALY_THRESHOLD_PERCENT = 20;  
-
+        const ANOMALY_THRESHOLD_PERCENT = 20;
 
         // Assign DOM elements
         const yearFilter = document.getElementById('yearFilter');
@@ -640,7 +639,7 @@
 
                 availableMeters.forEach(meter => {
                     const currentConsumption = parseFloat(row[meter]);
-                    
+
                     newRow[`${meter} MoM Change`] = 'N/A';
                     if (prevMonthRow && !isNaN(currentConsumption)) {
                         const prevConsumption = parseFloat(prevMonthRow[meter]);
@@ -682,7 +681,7 @@
             console.log("populateFilters: Starting with data length", data.length);
             const years = new Set(['All']);
             const months = new Set();
-            
+
             availableMeters = [];
             if (data.length > 0) {
                 Object.keys(data[0]).forEach(key => {
@@ -722,7 +721,7 @@
                 if (b === 'All') return 1;
                 return parseInt(a) - parseInt(b);
             });
-            
+
             yearFilter.innerHTML = sortedYears.map(year => `<option value="${year}">${year}</option>`).join('');
 
             // Populate Custom Month Filter
@@ -757,464 +756,528 @@
             `;
             meterSelectOptions.appendChild(allMeterOptionDiv);
 
+
             availableMeters.forEach(meter => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'custom-select-option-item';
                 optionDiv.innerHTML = `
-                    <input type="checkbox" id="meter_${meter.replace(/[^a-zA-Z0-9]/g, '_')}" value="${meter}">
-                    <label for="meter_${meter.replace(/[^a-zA-Z0-9]/g, '_')}">${meter}</label>
+                    <input type="checkbox" id="meter_${meter.replace(/[^a-zA-Z0-9]/g, '')}" value="${meter}">
+                    <label for="meter_${meter.replace(/[^a-zA-Z0-9]/g, '')}">${meter.replace(' (Consumption)', '')}</label>
                 `;
                 meterSelectOptions.appendChild(optionDiv);
             });
 
-            // Initialize select all/none behavior for months
-            document.getElementById('month_all').addEventListener('change', function() {
-                const isChecked = this.checked;
-                monthSelectOptions.querySelectorAll('input[type="checkbox"]:not(#month_all)').forEach(checkbox => {
-                    checkbox.checked = isChecked;
-                });
-                updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
-            });
-
-            // Initialize select all/none behavior for meters
-            document.getElementById('meter_all').addEventListener('change', function() {
-                const isChecked = this.checked;
-                meterSelectOptions.querySelectorAll('input[type="checkbox"]:not(#meter_all)').forEach(checkbox => {
-                    checkbox.checked = isChecked;
-                });
-                updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
-            });
-            
-            // Event listeners for individual checkboxes to deselect 'All' if one is unchecked
-            monthSelectOptions.querySelectorAll('input[type="checkbox"]:not(#month_all)').forEach(checkbox => {
-                checkbox.addEventListener('change', () => {
-                    if (!checkbox.checked) {
-                        document.getElementById('month_all').checked = false;
-                    }
-                    updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
-                });
-            });
-
-            meterSelectOptions.querySelectorAll('input[type="checkbox']:not(#meter_all)').forEach(checkbox => {
-                checkbox.addEventListener('change', () => {
-                    if (!checkbox.checked) {
-                        document.getElementById('meter_all').checked = false;
-                    }
-                    updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
-                });
-            });
-
-            // Set initial trigger text
-            updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
-            updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
             console.log("populateFilters: Filters populated.");
+            setupCustomSelects();
         }
 
-        function updateCustomSelectTriggerText(triggerElement, optionsElement, defaultText) {
-            const checkedCheckboxes = optionsElement.querySelectorAll('input[type="checkbox"]:checked:not([value="All"])');
-            const allCheckbox = optionsElement.querySelector('input[type="checkbox"][value="All"]');
-
-            if (allCheckbox && allCheckbox.checked) {
-                triggerElement.textContent = `All ${defaultText}`;
-            } else if (checkedCheckboxes.length > 0) {
-                const selectedNames = Array.from(checkedCheckboxes).map(cb => {
-                    // Extract text from label, excluding the (MM) part for months
-                    if (optionsElement.id === 'monthSelectOptions') {
-                        return cb.nextElementSibling.textContent.split(' ')[0];
-                    }
-                    return cb.value;
-                });
-                if (selectedNames.length > 2) {
-                    triggerElement.textContent = `${selectedNames.length} Selected`;
-                } else {
-                    triggerElement.textContent = selectedNames.join(', ');
+        function setupCustomSelects() {
+            // Month Select
+            monthSelectTrigger.addEventListener('click', () => {
+                monthSelectOptions.classList.toggle('open');
+                monthSelectTrigger.classList.toggle('open');
+                if (monthSelectOptions.classList.contains('open')) {
+                    monthSearchInput.focus();
                 }
-            } else {
-                triggerElement.textContent = `Select ${defaultText}`;
+            });
+
+            monthSelectOptions.addEventListener('change', (event) => {
+                if (event.target.type === 'checkbox') {
+                    if (event.target.value === 'All') {
+                        // If "All Months" is checked/unchecked, toggle all others
+                        monthSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            if (cb !== event.target) {
+                                cb.checked = event.target.checked;
+                            }
+                        });
+                    } else {
+                        // If any other month is unchecked, uncheck "All Months"
+                        if (!event.target.checked) {
+                            monthSelectOptions.querySelector('#month_all').checked = false;
+                        }
+                    }
+                    updateSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
+                }
+            });
+
+            monthSearchInput.addEventListener('input', () => {
+                const searchTerm = monthSearchInput.value.toLowerCase();
+                monthSelectOptions.querySelectorAll('.custom-select-option-item').forEach(item => {
+                    const label = item.querySelector('label');
+                    if (label) {
+                        const monthText = label.textContent.toLowerCase();
+                        if (monthText.includes(searchTerm)) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    }
+                });
+            });
+
+            // Meter Select
+            meterSelectTrigger.addEventListener('click', () => {
+                meterSelectOptions.classList.toggle('open');
+                meterSelectTrigger.classList.toggle('open');
+                if (meterSelectOptions.classList.contains('open')) {
+                    meterSearchInput.focus();
+                }
+            });
+
+            meterSelectOptions.addEventListener('change', (event) => {
+                if (event.target.type === 'checkbox') {
+                    if (event.target.value === 'All') {
+                        // If "All Meters" is checked/unchecked, toggle all others
+                        meterSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            if (cb !== event.target) {
+                                cb.checked = event.target.checked;
+                            }
+                        });
+                    } else {
+                        // If any other meter is unchecked, uncheck "All Meters"
+                        if (!event.target.checked) {
+                            meterSelectOptions.querySelector('#meter_all').checked = false;
+                        }
+                    }
+                    updateSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
+                }
+            });
+
+            meterSearchInput.addEventListener('input', () => {
+                const searchTerm = meterSearchInput.value.toLowerCase();
+                meterSelectOptions.querySelectorAll('.custom-select-option-item').forEach(item => {
+                    const label = item.querySelector('label');
+                    if (label) {
+                        const meterText = label.textContent.toLowerCase();
+                        if (meterText.includes(searchTerm)) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    }
+                });
+            });
+
+            // Close custom selects when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!monthSelectContainer.contains(event.target) && monthSelectOptions.classList.contains('open')) {
+                    monthSelectOptions.classList.remove('open');
+                    monthSelectTrigger.classList.remove('open');
+                }
+                if (!meterSelectContainer.contains(event.target) && meterSelectOptions.classList.contains('open')) {
+                    meterSelectOptions.classList.remove('open');
+                    meterSelectTrigger.classList.remove('open');
+                }
+            });
+        }
+
+        function updateSelectTriggerText(trigger, optionsContainer, defaultText) {
+            const checkedCheckboxes = optionsContainer.querySelectorAll('input[type="checkbox"]:checked');
+            if (checkedCheckboxes.length === 0) {
+                trigger.textContent = `Select ${defaultText}`;
+            } else if (checkedCheckboxes.length === optionsContainer.querySelectorAll('input[type="checkbox"]').length - 1 && optionsContainer.querySelector('input[value="All"]')) {
+                trigger.textContent = `All ${defaultText}`;
+            } else if (checkedCheckboxes.length === 1 && checkedCheckboxes[0].value === 'All') {
+                trigger.textContent = `All ${defaultText}`;
+            }
+             else {
+                const selectedValues = Array.from(checkedCheckboxes)
+                    .filter(cb => cb.value !== 'All')
+                    .map(cb => {
+                        if (defaultText === 'Months') {
+                            return new Date(2000, parseInt(cb.value) - 1, 1).toLocaleString('default', { month: 'short' });
+                        } else if (defaultText === 'Meters') {
+                            return cb.value.replace(' (Consumption)', '');
+                        }
+                        return cb.value;
+                    });
+                trigger.textContent = selectedValues.join(', ');
             }
         }
 
-        // Custom dropdown toggle logic
-        function setupCustomSelect(trigger, options, searchInput) {
-            trigger.addEventListener('click', () => {
-                options.classList.toggle('open');
-                trigger.classList.toggle('open');
-                if (options.classList.contains('open')) {
-                    searchInput.focus();
-                }
-            });
+        // Function to fetch data from the Google Apps Script proxy
+        async function fetchGoogleSheetData() {
+            showMessage("Loading data from Google Sheet...", 'warning');
+            tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Loading data from Google Sheet...</td></tr>';
+            try {
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
 
-            // Close when clicking outside
-            document.addEventListener('click', (event) => {
-                if (!trigger.contains(event.target) && !options.contains(event.target)) {
-                    options.classList.remove('open');
-                    trigger.classList.remove('open');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Network response was not ok:', response.status, errorText);
+                    showMessage(`Failed to load data. Server responded with status ${response.status}. Please check the Google Apps Script deployment and permissions.`, 'error');
+                    return [];
                 }
-            });
 
-            // Search functionality
-            searchInput.addEventListener('keyup', () => {
-                const filter = searchInput.value.toLowerCase();
-                options.querySelectorAll('.custom-select-option-item:not(:first-child)').forEach(item => { // Exclude 'All' option
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(filter) ? '' : 'none';
-                });
-            });
+                const csvText = await response.text();
+                console.log("Raw CSV Text Length:", csvText.length);
+                
+                // Attempt to parse the CSV. If it's a JSON error message, handle it.
+                let parsedData;
+                try {
+                    parsedData = XLSX.read(csvText, { type: 'string' }).Sheets.Sheet1;
+                    rawReportData = XLSX.utils.sheet_to_json(parsedData, { header: 1 }); // Read as array of arrays first
+
+                    // Assuming the first row is headers, find the 'Month' column
+                    const headers = rawReportData[0];
+                    const monthColIndex = headers.indexOf('Month');
+                    if (monthColIndex === -1) {
+                        showMessage('CSV data missing "Month" column. Please ensure your Google Sheet has a "Month" column.', 'error');
+                        return [];
+                    }
+
+                    // Transform array of arrays to array of objects using the first row as headers
+                    rawReportData = rawReportData.slice(1).map(row => {
+                        const obj = {};
+                        headers.forEach((header, i) => {
+                            obj[header] = row[i];
+                        });
+                        return obj;
+                    });
+                     console.log("Parsed raw report data (first 5 rows):", rawReportData.slice(0, 5));
+
+
+                    // Validate data: Ensure 'Month' and consumption columns are present and data is numeric
+                    if (rawReportData.length === 0) {
+                        showMessage("No data found in the Google Sheet. Please ensure your sheet is not empty.", 'warning');
+                        return [];
+                    }
+
+                    // Check if 'Month' column exists and is not empty
+                    if (!rawReportData[0].hasOwnProperty('Month')) {
+                        showMessage('Missing "Month" column in your Google Sheet. Please ensure the first column is named "Month".', 'error');
+                        return [];
+                    }
+
+                    // Identify consumption columns and convert values to numbers
+                    availableMeters = Object.keys(rawReportData[0]).filter(key => key.includes('(Consumption)'));
+                    if (availableMeters.length === 0) {
+                        showMessage('No consumption columns found (e.g., "METER1 (Consumption)"). Please ensure your meter columns are named correctly.', 'error');
+                        return [];
+                    }
+
+                    rawReportData = rawReportData.map(row => {
+                        const newRow = { ...row };
+                        availableMeters.forEach(meter => {
+                            newRow[meter] = parseFloat(row[meter]) || 0; // Convert to number, default to 0 if invalid
+                        });
+                        // Ensure Month is formatted YYYY-MM
+                        if (newRow.Month) {
+                             const dateParts = newRow.Month.split('-'); // Assumes YYYY-MM-DD or YYYY-MM format
+                             if (dateParts.length >= 2) {
+                                 newRow.Month = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}`;
+                             } else {
+                                 // Attempt to parse if not already YYYY-MM format (e.g., if it's MM/DD/YYYY)
+                                 const parsedDate = new Date(newRow.Month);
+                                 if (!isNaN(parsedDate)) {
+                                     newRow.Month = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`;
+                                 } else {
+                                     console.warn(`Could not parse Month: ${row.Month}. Skipping row.`);
+                                     return null; // Mark for filtering out
+                                 }
+                             }
+                         }
+                        return newRow;
+                    }).filter(row => row !== null); // Filter out rows with unparseable months
+
+                    fullReportData = calculateMoMYoY(rawReportData);
+                    hideMessage();
+                    populateFilters(rawReportData); // Use raw data for filter population as MoM/YoY are calculated later
+                    applyFilters(); // Apply initial filters to display data
+                    return fullReportData;
+
+                } catch (jsonError) {
+                    // This block catches if the CSV *was actually a JSON error message* from Apps Script
+                    try {
+                        const errorResponse = JSON.parse(csvText);
+                        showMessage(`Apps Script Error: ${errorResponse.error}. Context: ${errorResponse.context || 'N/A'}`, 'error');
+                    } catch (finalError) {
+                        // If it's not valid JSON either, it's just raw unparseable text
+                        showMessage(`Failed to parse data: ${csvText.substring(0, 200)}... It might not be valid CSV.`, 'error');
+                    }
+                    console.error("Parsing error:", jsonError);
+                    return [];
+                }
+
+            } catch (error) {
+                console.error("Fetch error:", error);
+                showMessage(`Network error: ${error.message}. Please check your internet connection and the Apps Script URL.`, 'error');
+                return [];
+            }
         }
 
 
-        // Function to filter data based on selected criteria
-        function filterData() {
-            console.log("filterData: Starting filtering...");
+        // Function to filter and display data based on selections
+        function applyFilters() {
+            hideMessage();
+            console.log("applyFilters: Starting...");
+
             const selectedYear = yearFilter.value;
             const selectedMonths = Array.from(monthSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
-                                      .filter(cb => cb.value !== 'All')
-                                      .map(cb => cb.value);
+                                      .map(cb => cb.value)
+                                      .filter(value => value !== 'All');
             const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
-                                     .filter(cb => cb.value !== 'All')
-                                     .map(cb => cb.value);
-            
-            console.log("Selected Year:", selectedYear);
-            console.log("Selected Months:", selectedMonths);
-            console.log("Selected Meters:", selectedMeters);
+                                    .map(cb => cb.value)
+                                    .filter(value => value !== 'All');
+            const showChange = showChangeColumnsCheckbox.checked;
+            const showSummary = showSummaryMetricsCheckbox.checked;
+            const enableAnomaly = showAnomalyDetectionCheckbox.checked;
 
-            if (selectedMonths.length === 0 || selectedMeters.length === 0) {
-                showMessage("Please select at least one month and one meter to generate the report.");
-                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Please select filters and apply.</td></tr>';
-                summaryMetrics.classList.add('hidden');
-                chartSection.classList.add('hidden');
-                anomalyAlerts.classList.add('hidden');
-                return [];
-            } else {
-                hideMessage();
-            }
+            console.log("applyFilters: Filters - Year:", selectedYear, "Months:", selectedMonths, "Meters:", selectedMeters, "Show Change:", showChange, "Show Summary:", showSummary, "Enable Anomaly:", enableAnomaly);
 
-            let filtered = fullReportData.filter(row => {
-                const rowDate = new Date(row.Month);
-                const rowYear = rowDate.getFullYear().toString();
-                const rowMonth = String(rowDate.getMonth() + 1).padStart(2, '0');
+            let filteredData = fullReportData.filter(row => {
+                const rowYear = new Date(row.Month).getFullYear().toString();
+                const rowMonth = String(new Date(row.Month).getMonth() + 1).padStart(2, '0');
 
                 const yearMatch = selectedYear === 'All' || rowYear === selectedYear;
-                const monthMatch = selectedMonths.includes(rowMonth);
-                
+                const monthMatch = selectedMonths.length === 0 || selectedMonths.includes(rowMonth); // If no months selected, all match
+
                 return yearMatch && monthMatch;
             });
-            console.log("filterData: Data filtered by Year and Month. Result length:", filtered.length);
+            console.log("applyFilters: Data filtered by Year/Month. Length:", filteredData.length);
 
-            // Filter out rows where all selected meters have empty or non-numeric values
-            filtered = filtered.filter(row => {
-                return selectedMeters.some(meter => {
-                    const value = parseFloat(row[meter]);
-                    return !isNaN(value); // Keep row if at least one selected meter has a valid number
-                });
-            });
-            console.log("filterData: Data filtered by valid meter values. Result length:", filtered.length);
-
-            return filtered;
-        }
-
-        // Function to render the table with filtered data
-        function renderTable(data) {
-            console.log("renderTable: Starting with data length", data.length);
-            tableBody.innerHTML = '';
+            // Dynamically build table headers based on filtered meters and change column preference
             tableHeaderTransformerRow.innerHTML = '';
             tableHeaderMeterRow.innerHTML = '';
 
-            if (data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No data available for the selected filters.</td></tr>';
+            // Always add the Month header
+            const monthHeader = document.createElement('th');
+            monthHeader.textContent = 'Month';
+            monthHeader.rowSpan = 2; // Spans both rows
+            monthHeader.className = 'month-header'; // Apply specific style
+            tableHeaderTransformerRow.appendChild(monthHeader);
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No data found for the selected filters.</td></tr>';
                 chartSection.classList.add('hidden');
                 summaryMetrics.classList.add('hidden');
                 anomalyAlerts.classList.add('hidden');
                 return;
             }
 
-            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
-                                     .filter(cb => cb.value !== 'All')
-                                     .map(cb => cb.value);
-
-            const showChanges = showChangeColumnsCheckbox.checked;
-            const enableAnomaly = showAnomalyDetectionCheckbox.checked;
-
-            // --- Construct Table Headers ---
-            // Month header
-            const monthHeader = document.createElement('th');
-            monthHeader.textContent = 'Month';
-            monthHeader.rowSpan = 2; // Spans two rows
-            monthHeader.className = 'month-header'; // Add class for styling
-            tableHeaderTransformerRow.appendChild(monthHeader);
-
-            // Group meters by transformer for top row header
-            const transformerGroups = {};
+            // Determine unique transformers from selected meters
+            const uniqueTransformers = new Set();
             selectedMeters.forEach(meter => {
-                const transformerMatch = meter.match(/T(\d+)/);
-                const transformerName = transformerMatch ? `Transformer ${transformerMatch[1]}` : 'Other Meters';
-                if (!transformerGroups[transformerName]) {
-                    transformerGroups[transformerName] = [];
+                const transformerMatch = meter.match(/\((T\d+)\)/);
+                if (transformerMatch) {
+                    uniqueTransformers.add(transformerMatch[1]);
                 }
-                transformerGroups[transformerName].push(meter);
             });
-            console.log("renderTable: Transformer Groups:", transformerGroups);
 
-            // Transformer Row (Top Header)
-            for (const transformerName of Object.keys(transformerGroups).sort()) { // Sort transformer names
-                const th = document.createElement('th');
-                th.textContent = transformerName;
-                th.colSpan = showChanges ? transformerGroups[transformerName].length * 3 : transformerGroups[transformerName].length; // Consumption + MoM + YoY
-                th.className = 'transformer-row th'; // Add class for styling
-                tableHeaderTransformerRow.appendChild(th);
-            }
+            // Sort transformers numerically (T1, T2, T3...)
+            const sortedTransformers = Array.from(uniqueTransformers).sort((a, b) => {
+                const numA = parseInt(a.replace('T', ''));
+                const numB = parseInt(b.replace('T', ''));
+                return numA - numB;
+            });
 
-            // Meter Row (Second Header)
-            // Add an empty th for the Month column in the second header row (to align columns)
-            tableHeaderMeterRow.innerHTML = '<th></th>'; // Placeholder for the Month column's alignment
+            // Build transformer and meter headers
+            sortedTransformers.forEach(transformer => {
+                const transformerMeters = selectedMeters.filter(meter => meter.includes(`(${transformer})`));
+                if (transformerMeters.length > 0) {
+                    const transformerTh = document.createElement('th');
+                    transformerTh.colSpan = transformerMeters.length * (showChange ? 3 : 1); // Each meter gets Cons, MoM, YoY columns
+                    transformerTh.textContent = transformer;
+                    transformerTh.className = 'transformer-row-header'; // Add a class for styling
+                    tableHeaderTransformerRow.appendChild(transformerTh);
 
-            for (const transformerName of Object.keys(transformerGroups).sort()) {
-                transformerGroups[transformerName].forEach(meter => {
-                    const meterTh = document.createElement('th');
-                    meterTh.textContent = meter.replace(' (Consumption)', ''); // Clean up meter name for display
-                    meterTh.className = 'meter-row th'; // Add class for styling
-                    tableHeaderMeterRow.appendChild(meterTh);
+                    transformerMeters.forEach(meter => {
+                        const meterName = meter.replace(` (${transformer}) (Consumption)`, ''); // Extract just meter name (e.g., MAIN METER)
+                        const meterTh = document.createElement('th');
+                        meterTh.textContent = meterName + ' (kWh)';
+                        meterTh.className = 'meter-row-header'; // Add a class for styling
+                        tableHeaderMeterRow.appendChild(meterTh);
 
-                    if (showChanges) {
-                        const momTh = document.createElement('th');
-                        momTh.textContent = 'MoM %';
-                        momTh.className = 'meter-row th';
-                        tableHeaderMeterRow.appendChild(momTh);
+                        if (showChange) {
+                            const momTh = document.createElement('th');
+                            momTh.textContent = 'MoM%';
+                            momTh.className = 'meter-row-header';
+                            tableHeaderMeterRow.appendChild(momTh);
 
-                        const yoyTh = document.createElement('th');
-                        yoyTh.textContent = 'YoY %';
-                        yoyTh.className = 'meter-row th';
-                        tableHeaderMeterRow.appendChild(yoyTh);
-                    }
-                });
-            }
+                            const yoyTh = document.createElement('th');
+                            yoyTh.textContent = 'YoY%';
+                            yoyTh.className = 'meter-row-header';
+                            tableHeaderMeterRow.appendChild(yoyTh);
+                        }
+                    });
+                }
+            });
 
-            // --- Populate Table Body ---
-            let anomaliesFound = [];
+            // Populate table body
+            tableBody.innerHTML = '';
+            let totalConsumptionAllMeters = 0;
+            const anomalyFindings = [];
 
-            data.forEach((rowData, index) => {
-                const row = document.createElement('tr');
+            filteredData.forEach(row => {
+                const tr = document.createElement('tr');
                 const monthTd = document.createElement('td');
-                monthTd.textContent = rowData.Month;
-                row.appendChild(monthTd);
+                monthTd.textContent = row.Month;
+                tr.appendChild(monthTd);
 
-                selectedMeters.forEach(meter => {
-                    const consumptionValue = parseFloat(rowData[meter]);
-                    const consumptionTd = document.createElement('td');
-                    consumptionTd.textContent = !isNaN(consumptionValue) ? consumptionValue.toFixed(2) : 'N/A';
-                    
-                    // Anomaly Detection and Highlighting
-                    if (enableAnomaly && !isNaN(consumptionValue) && index >= 3) { // Need at least 3 previous months for average
-                        const monthIndex = fullReportData.findIndex(d => d.Month === rowData.Month);
-                        const meterIndexInAvailable = availableMeters.indexOf(meter);
+                let rowTotalConsumption = 0; // Total consumption for the current row/month across selected meters
 
-                        if (monthIndex > -1 && meterIndexInAvailable > -1) {
-                            const relevantDataPoints = [];
-                            for (let i = monthIndex - 1; i >= 0 && relevantDataPoints.length < 3; i--) {
-                                const prevConsumption = parseFloat(fullReportData[i][meter]);
-                                if (!isNaN(prevConsumption)) {
-                                    relevantDataPoints.push(prevConsumption);
-                                }
-                            }
+                sortedTransformers.forEach(transformer => {
+                    const transformerMeters = selectedMeters.filter(meter => meter.includes(`(${transformer})`));
+                    transformerMeters.forEach(meter => {
+                        const consumption = parseFloat(row[meter]);
+                        const consumptionTd = document.createElement('td');
+                        consumptionTd.textContent = !isNaN(consumption) ? consumption.toFixed(2) : 'N/A';
+                        tr.appendChild(consumptionTd);
 
-                            if (relevantDataPoints.length === 3) {
-                                const average = relevantDataPoints.reduce((sum, val) => sum + val, 0) / 3;
-                                const deviation = ((consumptionValue - average) / average) * 100;
-
-                                if (Math.abs(deviation) > ANOMALY_THRESHOLD_PERCENT) {
-                                    consumptionTd.classList.add('anomaly-highlight');
-                                    anomaliesFound.push({
-                                        month: rowData.Month,
-                                        meter: meter.replace(' (Consumption)', ''),
-                                        value: consumptionValue.toFixed(2),
-                                        deviation: deviation.toFixed(2),
-                                        average: average.toFixed(2)
-                                    });
-                                }
-                            }
+                        if (!isNaN(consumption)) {
+                            rowTotalConsumption += consumption; // Sum for overall total
                         }
-                    }
-                    row.appendChild(consumptionTd);
 
-                    if (showChanges) {
-                        const momChange = rowData[`${meter} MoM Change`];
-                        const momTd = document.createElement('td');
-                        momTd.textContent = momChange;
-                        if (momChange.endsWith('%') && momChange !== 'N/A' && momChange !== 'Inf%') {
-                            const momVal = parseFloat(momChange);
-                            if (momVal > 0) momTd.classList.add('positive-change');
-                            else if (momVal < 0) momTd.classList.add('negative-change');
-                            else momTd.classList.add('no-change');
-                        }
-                        row.appendChild(momTd);
+                        if (showChange) {
+                            const momChange = row[`${meter} MoM Change`];
+                            const momTd = document.createElement('td');
+                            momTd.textContent = momChange;
+                            momTd.className = getChangeClass(momChange);
+                            tr.appendChild(momTd);
 
-                        const yoyChange = rowData[`${meter} YoY Change`];
-                        const yoyTd = document.createElement('td');
-                        yoyTd.textContent = yoyChange;
-                        if (yoyChange.endsWith('%') && yoyChange !== 'N/A' && yoyChange !== 'Inf%') {
-                            const yoyVal = parseFloat(yoyChange);
-                            if (yoyVal > 0) yoyTd.classList.add('positive-change');
-                            else if (yoyVal < 0) yoyTd.classList.add('negative-change');
-                            else yoyTd.classList.add('no-change');
+                            const yoyChange = row[`${meter} YoY Change`];
+                            const yoyTd = document.createElement('td');
+                            yoyTd.textContent = yoyChange;
+                            yoyTd.className = getChangeClass(yoyChange);
+                            tr.appendChild(yoyTd);
                         }
-                        row.appendChild(yoyTd);
-                    }
+                    });
                 });
-                tableBody.appendChild(row);
+                totalConsumptionAllMeters += rowTotalConsumption; // Accumulate for overall sum
+
+                if (enableAnomaly) {
+                    availableMeters.forEach(meter => {
+                        const currentConsumption = parseFloat(row[meter]);
+                        if (!isNaN(currentConsumption)) {
+                            const prevMonthsData = rawReportData.filter(d => {
+                                const dDate = new Date(d.Month);
+                                const rowDate = new Date(row.Month);
+                                // Consider previous 3 months for the same meter
+                                return dDate < rowDate && dDate.getMonth() !== rowDate.getMonth() && dDate.getFullYear() === rowDate.getFullYear();
+                            }).slice(-3); // Get last 3 entries
+
+                            if (prevMonthsData.length >= 3) {
+                                const sumPrev = prevMonthsData.reduce((sum, d) => sum + (parseFloat(d[meter]) || 0), 0);
+                                const averagePrev = sumPrev / prevMonthsData.length;
+
+                                if (averagePrev > 0) {
+                                    const deviation = ((currentConsumption - averagePrev) / averagePrev) * 100;
+                                    if (Math.abs(deviation) > ANOMALY_THRESHOLD_PERCENT) {
+                                        anomalyFindings.push(`${row.Month} - ${meter.replace(' (Consumption)', '')}: Consumption of ${currentConsumption.toFixed(2)} kWh is ${deviation.toFixed(2)}% ${deviation > 0 ? 'higher' : 'lower'} than previous 3-month average of ${averagePrev.toFixed(2)} kWh.`);
+                                        // Highlight the row if an anomaly is detected in any meter for that month
+                                        tr.classList.add('anomaly-highlight');
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                tableBody.appendChild(tr);
             });
-            console.log("renderTable: Table rows populated.");
 
-            // Display Anomaly Alerts
-            if (enableAnomaly && anomaliesFound.length > 0) {
-                anomalyList.innerHTML = '';
-                anomaliesFound.forEach(anomaly => {
-                    const alertItem = document.createElement('div');
-                    alertItem.className = 'anomaly-item';
-                    alertItem.textContent = `Meter: ${anomaly.meter}, Month: ${anomaly.month}, Value: ${anomaly.value} (Deviation: ${anomaly.deviation}% from avg ${anomaly.average})`;
-                    anomalyList.appendChild(alertItem);
-                });
+            // Display anomaly alerts
+            if (enableAnomaly && anomalyFindings.length > 0) {
                 anomalyAlerts.classList.remove('hidden');
+                anomalyList.innerHTML = anomalyFindings.map(alert => `<div class="anomaly-item">${alert}</div>`).join('');
             } else {
                 anomalyAlerts.classList.add('hidden');
+                anomalyList.innerHTML = '';
             }
+
+
+            // Show/hide summary metrics
+            if (showSummary) {
+                summaryMetrics.classList.remove('hidden');
+                overallTotalConsumptionValue.textContent = totalConsumptionAllMeters.toFixed(2) + ' kWh';
+                // Add more summary calculations here if needed
+            } else {
+                summaryMetrics.classList.add('hidden');
+            }
+
+            renderChart(filteredData, selectedMeters);
         }
 
-        // Function to calculate and display summary metrics
-        function renderSummaryMetrics(data) {
-            console.log("renderSummaryMetrics: Starting with data length", data.length);
-            if (!showSummaryMetricsCheckbox.checked || data.length === 0) {
-                summaryMetrics.classList.add('hidden');
+        function getChangeClass(changeValue) {
+            if (changeValue === 'N/A') return 'no-change';
+            const num = parseFloat(changeValue);
+            if (isNaN(num)) return 'no-change';
+            if (num > 0) return 'positive-change';
+            if (num < 0) return 'negative-change';
+            return 'no-change';
+        }
+
+        function renderChart(data, selectedMeters) {
+            console.log("renderChart: Data length:", data.length, "Selected Meters:", selectedMeters);
+            if (myChart) {
+                myChart.destroy(); // Destroy previous chart instance
+            }
+
+            if (data.length === 0 || selectedMeters.length === 0) {
+                chartSection.classList.add('hidden');
                 return;
             }
 
-            summaryMetrics.classList.remove('hidden');
-            let overallTotal = 0;
-            const meterTotals = {};
-            const meterAverages = {};
-            const meterMax = {};
-            const meterMin = {};
-
-            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
-                                     .filter(cb => cb.value !== 'All')
-                                     .map(cb => cb.value);
-
-            selectedMeters.forEach(meter => {
-                meterTotals[meter] = 0;
-                meterMax[meter] = -Infinity;
-                meterMin[meter] = Infinity;
-            });
-
-            data.forEach(row => {
-                selectedMeters.forEach(meter => {
-                    const value = parseFloat(row[meter]);
-                    if (!isNaN(value)) {
-                        overallTotal += value;
-                        meterTotals[meter] += value;
-                        if (value > meterMax[meter]) meterMax[meter] = value;
-                        if (value < meterMin[meter]) meterMin[meter] = value;
-                    }
-                });
-            });
-
-            overallTotalConsumptionValue.textContent = overallTotal.toFixed(2);
-
-            // Clear previous meter specific summaries
-            summaryMetrics.querySelectorAll('.summary-item:not(#overallTotalConsumptionValue)').forEach(item => {
-                if (item.id !== 'overallTotalConsumptionValueContainer') { // Ensure we don't remove the overall total
-                    item.remove();
-                }
-            });
-
-
-            selectedMeters.forEach(meter => {
-                const count = data.filter(row => !isNaN(parseFloat(row[meter]))).length;
-                meterAverages[meter] = count > 0 ? (meterTotals[meter] / count).toFixed(2) : 'N/A';
-                
-                const meterSummaryDiv = document.createElement('div');
-                meterSummaryDiv.className = 'summary-item';
-                meterSummaryDiv.innerHTML = `
-                    <strong>${meter.replace(' (Consumption)', '')}:</strong><br>
-                    Total: ${meterTotals[meter].toFixed(2)}<br>
-                    Avg: ${meterAverages[meter]}<br>
-                    Max: ${meterMax[meter] === -Infinity ? 'N/A' : meterMax[meter].toFixed(2)}<br>
-                    Min: ${meterMin[meter] === Infinity ? 'N/A' : meterMin[meter].toFixed(2)}
-                `;
-                summaryMetrics.appendChild(meterSummaryDiv);
-            });
-            console.log("renderSummaryMetrics: Summary metrics updated.");
-        }
-
-
-        // Function to render the chart
-        function renderChart(data) {
-            console.log("renderChart: Starting with data length", data.length);
             chartSection.classList.remove('hidden');
 
-            if (myChart) {
-                myChart.destroy(); // Destroy existing chart before creating a new one
-            }
-
-            if (data.length === 0) {
-                chartSection.classList.add('hidden'); // Hide chart if no data
-                return;
-            }
-
-            const chartType = chartTypeFilter.value;
-            const labels = data.map(row => row.Month); // X-axis labels
+            const chartLabels = data.map(row => row.Month);
             const datasets = [];
+            const chartType = chartTypeFilter.value;
 
-            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
-                                     .filter(cb => cb.value !== 'All')
-                                     .map(cb => cb.value);
-            
-            selectedMeters.forEach((meter, index) => {
-                const consumptionValues = data.map(row => parseFloat(row[meter]));
+            // Sort selectedMeters based on desiredMeterOrder for consistent chart legend
+            const sortedSelectedMeters = [...selectedMeters].sort((a, b) => {
+                const indexA = desiredMeterOrder.indexOf(a);
+                const indexB = desiredMeterOrder.indexOf(b);
+                if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+
+
+            sortedSelectedMeters.forEach((meter, index) => {
+                const consumptionData = data.map(row => parseFloat(row[meter]) || 0);
                 datasets.push({
                     label: meter.replace(' (Consumption)', ''),
-                    data: consumptionValues,
-                    borderColor: chartBorderColors[index % chartBorderColors.length],
+                    data: consumptionData,
                     backgroundColor: chartColors[index % chartColors.length],
-                    fill: chartType === 'line' ? false : true, // Fill only for area/bar charts
-                    tension: 0.1, // Smooth lines for line charts
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    borderColor: chartBorderColors[index % chartBorderColors.length],
+                    borderWidth: 2,
+                    fill: chartType === 'line' ? false : true, // Fill area for bar/doughnut/etc.
+                    tension: 0.3 // For line charts, smooth lines
                 });
             });
 
-            // Add trendlines for line chart
-            if (chartType === 'line' && selectedMeters.length === 1) { // Only show trendline for single meter on line chart
-                const meter = selectedMeters[0];
-                const dataPointsForTrend = data.map((row, idx) => ({
-                    x: idx, // Use index as x-coordinate for linear regression
-                    y: parseFloat(row[meter])
-                })).filter(point => !isNaN(point.y));
+            // Trendline dataset (only for line/bar charts and if at least one meter is selected)
+            if ((chartType === 'line' || chartType === 'bar') && sortedSelectedMeters.length > 0) {
+                const primaryMeterData = data.map((row, i) => ({
+                    x: i, // Use index as x-value for linear regression
+                    y: parseFloat(row[sortedSelectedMeters[0]]) || 0
+                }));
+                const trendlinePoints = calculateLinearRegressionTrend(primaryMeterData);
 
-                if (dataPointsForTrend.length >= 2) {
-                    const trendlineData = calculateLinearRegressionTrend(dataPointsForTrend);
-                    
-                    // Map x-indices back to month labels for Chart.js
-                    const trendlineLabels = [labels[trendlineData[0].x], labels[trendlineData[1].x]];
-                    const trendlineValues = [trendlineData[0].y, trendlineData[1].y];
-
+                if (trendlinePoints.length === 2) {
                     datasets.push({
-                        label: `${meter.replace(' (Consumption)', '')} Trendline`,
-                        data: trendlineValues,
-                        borderColor: 'rgba(0, 0, 0, 0.5)', // Darker color for trendline
+                        label: `Trendline (${sortedSelectedMeters[0].replace(' (Consumption)', '')})`,
+                        data: [
+                            { x: chartLabels[trendlinePoints[0].x], y: trendlinePoints[0].y },
+                            { x: chartLabels[trendlinePoints[1].x], y: trendlinePoints[1].y }
+                        ],
+                        borderColor: 'rgba(255, 99, 132, 1)', // Red for trendline
+                        borderWidth: 2,
                         borderDash: [5, 5], // Dashed line
                         fill: false,
-                        pointRadius: 0,
-                        type: 'line', // Ensure it's drawn as a line
-                        xAxisID: 'x', // Link to the same X-axis
-                        yAxisID: 'y'  // Link to the same Y-axis
+                        type: 'line', // Ensure it's a line type even if overall chart is bar
+                        pointRadius: 0, // No points for trendline
+                        yAxisID: 'y'
                     });
                 }
             }
 
 
-            myChart = new Chart(consumptionChartCtx, {
+            const chartConfig = {
                 type: chartType,
                 data: {
-                    labels: labels,
+                    labels: chartLabels,
                     datasets: datasets
                 },
                 options: {
@@ -1233,10 +1296,8 @@
                             display: true,
                             text: 'Electricity Consumption Over Time',
                             font: {
-                                size: 18,
-                                weight: 'bold'
-                            },
-                            color: '#333'
+                                size: 18
+                            }
                         },
                         tooltip: {
                             callbacks: {
@@ -1248,189 +1309,67 @@
                                     if (context.parsed.y !== null) {
                                         label += context.parsed.y.toFixed(2) + ' kWh';
                                     }
+                                    return label;
                                 }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Month',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
-                            },
                             grid: {
                                 display: false
                             }
                         },
                         y: {
+                            beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Consumption (kWh)',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
+                                text: 'Consumption (kWh)'
                             },
-                            beginAtZero: true,
-                            grid: {
-                                color: '#e0e0e0'
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' kWh';
+                                }
                             }
                         }
                     }
                 }
-            });
-            console.log("renderChart: Chart rendered.");
-        }
+            };
 
-        // Main function to fetch and process data
-        async function fetchDataAndRender() {
-            tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Fetching data from Google Sheet...</td></tr>';
-            try {
-                console.log(`Attempting to fetch data from: ${GOOGLE_SHEET_CSV_URL}`);
-                const response = await fetch(GOOGLE_SHEET_CSV_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const csvData = await response.text();
-                console.log("CSV Data fetched successfully. Length:", csvData.length);
-                console.log("CSV Data (first 500 chars):", csvData.substring(0, 500));
-
-
-                // Parse CSV using SheetJS
-                const workbook = XLSX.read(csvData, { type: 'string' });
-                console.log("Workbook read successfully.");
-                console.log("Sheet names found:", workbook.SheetNames);
-                
-                // For CSV, usually there's only one sheet, typically at index 0
-                const sheetName = workbook.SheetNames[0]; 
-                if (!sheetName) {
-                    throw new Error(`No sheets found in the workbook parsed from CSV.`);
-                }
-                console.log(`Using sheet name: "${sheetName}" for parsing.`);
-                const worksheet = workbook.Sheets[sheetName];
-                console.log("Worksheet:", worksheet); // Log the worksheet object
-
-                // Changed: Removed `header: 1` and `range` to get raw array of arrays.
-                // We will manually extract headers from the first row of `jsonDataRaw`.
-                const jsonOptions = { 
-                    header: 'A', // SheetJS option to output an array of arrays (A for Array)
-                    raw: false, 
-                    defval: null
-                }; 
-                let jsonDataRaw = XLSX.utils.sheet_to_json(worksheet, jsonOptions);
-                console.log("jsonDataRaw from sheet_to_json (first 2 rows):", jsonDataRaw.slice(0,2));
-
-
-                if (jsonDataRaw.length < 2) { // Less than 2 rows means only headers or no data
-                    showMessage("No data or only headers found in the Google Sheet. Please check the sheet content.", 'error');
-                    tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No data found in the Google Sheet.</td></tr>';
-                    return;
-                }
-
-                // Manually extract headers and raw data rows
-                const headers = jsonDataRaw[0]; // First array is headers
-                rawReportData = jsonDataRaw.slice(1).map(row => { // Slice from 1 to get actual data rows
-                    const rowObject = {};
-                    headers.forEach((header, index) => {
-                        rowObject[header] = row[index];
-                    });
-                    return rowObject;
-                });
-                console.log("Raw data parsed. First row example:", rawReportData[0]);
-                console.log("Total raw data rows:", rawReportData.length);
-
-                fullReportData = calculateMoMYoY(rawReportData);
-                console.log("MoM/YoY calculated. First row example (after MoM/YoY):", fullReportData[0]);
-
-
-                populateFilters(fullReportData);
-                resetFilters(); // <--- Call resetFilters AFTER filters are populated. This will tick 'All'
-                
-            } catch (error) {
-                console.error('Error fetching or processing data:', error);
-                showMessage(`Failed to load data: ${error.message}. Please ensure the Google Sheet is published to CSV, the URL is correct, and your CSV structure matches the expected format ("Month" column, "Consumption" columns).`, 'error');
-                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Failed to load data. See console for details.</td></tr>';
-            }
-        }
-
-        function applyFilters() {
-            const filteredData = filterData();
-            renderTable(filteredData);
-            renderSummaryMetrics(filteredData);
-            renderChart(filteredData);
-        }
-
-        function resetFilters() {
-            // Reset Year filter to 'All'
-            yearFilter.value = 'All';
-
-            // Reset Month multi-select
-            monthSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-            const allMonthsCheckbox = document.getElementById('month_all');
-            if (allMonthsCheckbox) allMonthsCheckbox.checked = true; // Select 'All Months' by default on reset
-            updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
-            monthSearchInput.value = ''; // Clear search input
-            monthSelectOptions.querySelectorAll('.custom-select-option-item').forEach(item => item.style.display = ''); // Show all items
-
-            // Reset Meter multi-select
-            meterSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-            const allMetersCheckbox = document.getElementById('meter_all');
-            if (allMetersCheckbox) allMetersCheckbox.checked = true; // Select 'All Meters' by default on reset
-            updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
-            meterSearchInput.value = ''; // Clear search input
-            meterSelectOptions.querySelectorAll('.custom-select-option-item').forEach(item => item.style.display = ''); // Show all items
-
-
-            // Reset other checkboxes
-            showChangeColumnsCheckbox.checked = false;
-            showSummaryMetricsCheckbox.checked = false;
-            showAnomalyDetectionCheckbox.checked = false;
-
-            // Reset Chart Type
-            chartTypeFilter.value = 'line';
-
-            // Apply filters to refresh the report
-            applyFilters();
-        }
-
-        // Function to download data as Excel
-        function downloadReport() {
-            const dataToDownload = filterData(); // Get currently filtered data
-
-            if (dataToDownload.length === 0) {
-                showMessage("No data to download based on current filters.");
-                return;
+            // Adjust options for non-Cartesian charts (Doughnut, Pie, Polar Area, Radar)
+            if (['doughnut', 'pie', 'polarArea', 'radar'].includes(chartType)) {
+                chartConfig.options.scales = {}; // Remove scales for these chart types
             }
 
-            // Create a worksheet from the filtered JSON data
-            const ws = XLSX.utils.json_to_sheet(dataToDownload);
 
-            // Create a workbook and add the worksheet
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Electricity Report");
-
-            // Write and download the Excel file
-            XLSX.writeFile(wb, "Electricity_Consumption_Report.xlsx");
-            showMessage("Report downloaded successfully!", 'success');
+            myChart = new Chart(consumptionChartCtx, chartConfig);
         }
 
         // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchDataAndRender();
-            
-            setupCustomSelect(monthSelectTrigger, monthSelectOptions, monthSearchInput);
-            setupCustomSelect(meterSelectTrigger, meterSelectOptions, meterSearchInput);
-
-            applyFiltersBtn.addEventListener('click', applyFilters);
-            resetFiltersBtn.addEventListener('click', resetFilters);
-            downloadReportBtn.addEventListener('click', downloadReport);
-            printReportBtn.addEventListener('click', () => window.print());
+        applyFiltersBtn.addEventListener('click', applyFilters);
+        resetFiltersBtn.addEventListener('click', () => {
+            yearFilter.value = 'All';
+            monthSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            meterSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
+            updateSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
+            chartTypeFilter.value = 'line';
+            showChangeColumnsCheckbox.checked = false;
+            showSummaryMetricsCheckbox.checked = false;
+            showAnomalyDetectionCheckbox.checked = false;
+            applyFilters();
+        });
+        downloadReportBtn.addEventListener('click', () => {
+            const wb = XLSX.utils.table_to_book(reportTable, { sheet: "Report" });
+            XLSX.writeFile(wb, "Electricity_Report.xlsx");
+        });
+        printReportBtn.addEventListener('click', () => {
+            window.print();
         });
 
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', fetchGoogleSheetData);
     </script>
 </body>
 </html>
