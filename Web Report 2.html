@@ -1314,27 +1314,26 @@
                 const worksheet = workbook.Sheets[sheetName];
                 console.log("Worksheet:", worksheet); // Log the worksheet object
 
-                // Determine the range to read. Assuming headers start at A1.
-                // If your headers start on a different row (e.g., row 2), change 'A1' to 'A2' etc.
+                // Changed: Removed `header: 1` and `range` to get raw array of arrays.
+                // We will manually extract headers from the first row of `jsonDataRaw`.
                 const jsonOptions = { 
-                    header: 1, 
+                    header: 'A', // SheetJS option to output an array of arrays (A for Array)
                     raw: false, 
-                    defval: null,
-                    range: 'A1' // *** IMPORTANT: Adjust this if your actual data headers are NOT in the first row ***
+                    defval: null
                 }; 
-                let jsonData = XLSX.utils.sheet_to_json(worksheet, jsonOptions);
-                console.log("jsonData from sheet_to_json (first 2 rows):", jsonData.slice(0,2));
+                let jsonDataRaw = XLSX.utils.sheet_to_json(worksheet, jsonOptions);
+                console.log("jsonDataRaw from sheet_to_json (first 2 rows):", jsonDataRaw.slice(0,2));
 
 
-                if (jsonData.length < 2) { // Less than 2 rows means only headers or no data
-                    showMessage("No data or only headers found in the Google Sheet. Please check the sheet content or 'range' option in the code if your headers are not in row 1.", 'error');
+                if (jsonDataRaw.length < 2) { // Less than 2 rows means only headers or no data
+                    showMessage("No data or only headers found in the Google Sheet. Please check the sheet content.", 'error');
                     tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No data found in the Google Sheet.</td></tr>';
                     return;
                 }
 
-                // Assuming the first row of the parsed data is headers
-                const headers = jsonData[0];
-                rawReportData = jsonData.slice(1).map(row => {
+                // Manually extract headers and raw data rows
+                const headers = jsonDataRaw[0]; // First array is headers
+                rawReportData = jsonDataRaw.slice(1).map(row => { // Slice from 1 to get actual data rows
                     const rowObject = {};
                     headers.forEach((header, index) => {
                         rowObject[header] = row[index];
@@ -1353,7 +1352,7 @@
                 
             } catch (error) {
                 console.error('Error fetching or processing data:', error);
-                showMessage(`Failed to load data: ${error.message}. Please ensure the Google Sheet is published to CSV, the URL is correct, and your CSV structure matches the expected format (headers in A1, "Month" column, "Consumption" columns).`, 'error');
+                showMessage(`Failed to load data: ${error.message}. Please ensure the Google Sheet is published to CSV, the URL is correct, and your CSV structure matches the expected format ("Month" column, "Consumption" columns).`, 'error');
                 tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Failed to load data. See console for details.</td></tr>';
             }
         }
