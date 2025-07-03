@@ -489,10 +489,10 @@
     </div>
 
     <script>
-        // *** IMPORTANT: This URL is now routed through a DIFFERENT CORS proxy to bypass potential Google Sheets restrictions. ***
-        // Original Google Sheet CSV URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7TH2d1i7eiKF7v6LkljyTUg7woKSUtnkNVkNYN7auNeysOnUqGiwwUEVl-WhjqsC-AtTrT3jJA_vw/pub?gid=1944316564&single=true&output=csv';
-        const GOOGLE_SHEET_CSV_URL = 'https://proxy.cors.sh/' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vR7TH2d1i7eiKF7v6LkljyTUg7woKSUtnkNVkNYN7auNeysOnUqGiwwUEVl-WhjqsC-AtTrT3jJA_vw/pub?gid=1944316564&single=true&output=csv');
-        const TARGET_SHEET_NAME = 'Monthly_Summary'; // The exact name of your sheet with data (Note: for CSV, this might not be used directly by XLSX.read)
+        // *** IMPORTANT: This URL is now your Google Apps Script Web App URL, which acts as a CORS proxy. ***
+        // It fetches the original Google Sheet CSV data and adds necessary CORS headers.
+        const GOOGLE_SHEET_CSV_URL = 'https://script.google.com/macros/s/AKfycby6FroNKqJ1rU6S-qE7FAHNCfkIo35pdMPY3yiShcuWcInXSmivg7JQprrMPzFKD9RCbw/exec';
+        const TARGET_SHEET_NAME = 'Monthly_Summary'; // This might not be used directly when fetching CSV via Apps Script, but kept for context
 
         let fullReportData = []; // Stores the entire parsed Google Sheet data with MoM/YoY
         let rawReportData = []; // Stores the raw parsed Google Sheet data before MoM/YoY calculations
