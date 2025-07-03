@@ -1410,5 +1410,63 @@ fetch(scriptURL)
     const tableBody = document.getElementById('table-body');
     tableBody.innerHTML = `<tr><td colspan="5">Error loading data: ${error.message}</td></tr>`;
   });
-</script></body>
+</script>
+<script>
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbz7lidciBT-Yz4nesxZ1s23gDvnCMWxL60CpvENMUYorVtGoKBryb24zp-omMgPhjPszA/exec';
+
+  fetch(scriptURL)
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.text();
+    })
+    .then(csv => {
+      const rows = csv.trim().split('\n').map(row => row.split(','));
+      const tableHead = document.getElementById('table-head');
+      const tableBody = document.getElementById('table-body');
+      tableHead.innerHTML = '';
+      tableBody.innerHTML = '';
+
+      // Create table headers
+      const headers = rows[0];
+      const headerRow = document.createElement('tr');
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
+      tableHead.appendChild(headerRow);
+
+      // Create table rows
+      let totalConsumption = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const row = document.createElement('tr');
+        rows[i].forEach((cell, index) => {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          row.appendChild(td);
+
+          // Assuming the consumption value is in a column named "Consumption"
+          if (headers[index].toLowerCase().includes('consumption')) {
+            const value = parseFloat(cell);
+            if (!isNaN(value)) totalConsumption += value;
+          }
+        });
+        tableBody.appendChild(row);
+      }
+
+      const totalElement = document.getElementById('total-consumption');
+      if (totalElement) {
+        totalElement.textContent = totalConsumption.toFixed(2);
+      }
+    })
+    .catch(error => {
+      console.error('Fetch error:', error);
+      const tableBody = document.getElementById('table-body');
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="5">Error loading data: ${error.message}</td></tr>`;
+      }
+    });
+</script>
+
+</body>
 </html>
