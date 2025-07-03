@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Consumption Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f2f5;
+        }
+        /* Custom styles for better aesthetics */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .filter-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .filter-group select,
+        .custom-select-trigger,
+        .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            background-color: #f8fafc;
+            color: #333;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .filter-group select:focus,
+        .custom-select-trigger:focus,
+        .search-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
+        /* Custom Select & Search Styles */
+        .custom-select-container {
+            position: relative;
+            width: 100%;
+        }
+        .custom-select-trigger {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .custom-select-trigger::after {
+            content: '▼';
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+            color: #666;
+            transition: transform 0.2s ease;
+        }
+        .custom-select-trigger.open::after {
+            transform: rotate(180deg);
+        }
+        .custom-select-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-height: 250px; /* Increased height */
+            overflow-y: auto;
+            padding: 0.5rem 0;
+            margin-top: 0.25rem;
+        }
+        .custom-select-options.open {
+            display: block;
+        }
+        .custom-select-option-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+        }
+        .custom-select-option-item:hover {
+            background-color: #f0f2f5;
+        }
+        .search-input {
+            margin-bottom: 0.5rem; /* Space between search and options */
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+        }
+
+        .filter-checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        /* New class for the second line of checkboxes */
+        .checkbox-row {
+            grid-column: 1 / -1; /* Spans full width */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem; /* Space between checkboxes */
+            margin-top: 0.5rem; /* Space from filters above */
+        }
+
+        .btn-primary, .btn-secondary {
+            background-image: linear-gradient(to right, #4F46E5, #6366F1);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            background-image: none; /* Override primary gradient */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background-color: #cbd5e1;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+        }
+        .button-group {
+            grid-column: 1 / -1; /* Span across all columns for alignment */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            justify-content: flex-end; /* Align buttons to the right */
+        }
+
+        .report-table-wrapper {
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-top: 1.5rem;
+            overflow-x: auto;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-table th,
+        .report-table td {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        .report-table thead th {
+            background-color: #edf2f7;
+            font-weight: 700;
+            color: #4a5568;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        .report-table tbody tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+        .report-table tbody tr:hover {
+            background-color: #e2e8f0;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+        .message-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 1rem;
+            border: 1px solid #ffeeba;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .summary-card {
+            background-color: #e0f2fe;
+            border: 1px solid #90cdf4;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: #2c5282;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            text-align: left;
+        }
+        .summary-item {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: rgba(255,255,255,0.7);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .summary-item strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            color: #000;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .positive-change { color: #16a34a; font-weight: 600; }
+        .negative-change { color: #dc2626; font-weight: 600; }
+        .no-change { color: #4b5563; }
+        .anomaly-highlight {
+            background-color: #fee2e2; /* Light red background */
+            border: 1px solid #ef4444; /* Red border */
+        }
+        .anomaly-alerts {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .anomaly-alerts h3 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        .anomaly-item {
+            color: #b91c1c;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .anomaly-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Styles for bordered transformer headers */
+        .report-table thead tr.transformer-row th {
+            border: 1px solid #000; /* Black border for the top-level transformer cells */
+            border-bottom: none; /* No bottom border for top row cells */
+            text-align: center; /* Center align transformer names */
+            vertical-align: middle;
+        }
+        .report-table thead tr.meter-row th {
+            border: 1px solid #000; /* Black border for meter cells */
+            border-top: none; /* No top border for second row cells */
+            font-size: 0.75rem; /* Smaller font for meter names */
+            padding: 0.5rem 1rem; /* Smaller padding */
+            text-align: center;
+        }
+        .report-table thead th.month-header {
+            border: 1px solid #000; /* Black border for Month header */
+            text-align: left;
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            body {
+                background-color: #fff; /* White background for printing */
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 100%; /* Use full width for print */
+                margin: 0;
+                padding: 0.5cm; /* Reduced padding for print */
+                box-shadow: none; /* No shadow in print */
+                border-radius: 0; /* No border-radius in print */
+            }
+            .filter-section, .button-group, .checkbox-row { /* Hide filters and buttons when printing */
+                display: none; 
+            }
+            h1 {
+                font-size: 1.5rem; /* Smaller title for print */
+                margin-bottom: 1rem;
+            }
+            .message-box, .anomaly-alerts {
+                display: none; /* Hide messages and alerts in print */
+            }
+            .summary-card {
+                box-shadow: none;
+                border: none;
+                background-color: #fff;
+                margin-top: 1rem;
+                padding: 0.5rem;
+            }
+            .summary-item {
+                box-shadow: none;
+                background-color: #fff;
+                padding: 0.25rem;
+            }
+            .report-table-wrapper {
+                box-shadow: none;
+                margin-top: 1rem;
+                overflow-x: visible; /* Allow content to flow */
+            }
+            .report-table {
+                font-size: 0.75rem; /* Smaller font for table */
+                width: 100%; /* Ensure table takes full width */
+                table-layout: fixed; /* Fixed layout to prevent overflow */
+            }
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem 0.75rem; /* Smaller padding for table cells */
+                border: 1px solid #ddd; /* Add borders for clarity in print */
+            }
+            .report-table thead th {
+                background-color: #fff; /* White background for print headers */
+            }
+            .report-table thead tr.transformer-row th {
+                border: 1px solid #000; /* Black border for print top headers */
+                border-bottom: none;
+            }
+            .report-table thead tr.meter-row th {
+                border: 1px solid #000; /* Black border for print sub-headers */
+                border-top: none;
+            }
+
+            .chart-container {
+                box-shadow: none;
+                background-color: #fff;
+                padding: 0;
+                height: 350px; /* Adjust chart height for print */
+                margin-top: 1rem;
+            }
+            /* Force page breaks for better layout */
+            .chart-container, .report-table-wrapper, .summary-card {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            .report-table tbody tr {
+                page-break-inside: avoid;
+            }
+            @page {
+                size: landscape; /* Request landscape orientation */
+                margin: 0.5cm; /* Smaller margins for print */
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 p-4 sm:p-6 lg:p-8">
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Electricity Consumption Report</h1>
+
+        <div id="messageArea" class="message-box hidden"></div>
+
+        <div class="filter-section">
+            <div class="filter-group" id="yearFilterGroup">
+                <label for="yearFilter" class="text-gray-700">Year:</label>
+                <select id="yearFilter" class="rounded-lg shadow-sm"></select>
+            </div>
+
+            <div class="filter-group" id="monthFilterGroup">
+                <label class="text-gray-700">Months:</label>
+                <div class="custom-select-container">
+                    <div id="monthSelectTrigger" class="custom-select-trigger rounded-lg shadow-sm">
+                        Select Months
+                    </div>
+                    <div id="monthSelectOptions" class="custom-select-options">
+                        <input type="text" id="monthSearchInput" class="search-input" placeholder="Search months...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label class="text-gray-700">Meters:</label>
+                <div class="custom-select-container">
+                    <div id="meterSelectTrigger" class="custom-select-trigger rounded-lg shadow-sm">
+                        Select Meters
+                    </div>
+                    <div id="meterSelectOptions" class="custom-select-options">
+                        <input type="text" id="meterSearchInput" class="search-input" placeholder="Search meters...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label for="chartTypeFilter" class="text-gray-700">Chart Type:</label>
+                <select id="chartTypeFilter" class="rounded-lg shadow-sm">
+                    <option value="line">Line Chart</option>
+                    <option value="bar">Bar Chart</option>
+                    <option value="doughnut">Doughnut Chart</option>
+                    <option value="pie">Pie Chart</option>
+                    <option value="polarArea">Polar Area Chart</option>
+                    <option value="radar">Radar Chart</option>
+                </select>
+            </div>
+            
+            <div class="checkbox-row">
+                <div class="filter-group filter-checkbox-group">
+                    <input type="checkbox" id="showChangeColumns" class="rounded text-indigo-600 focus:ring-indigo-500">
+                    <label for="showChangeColumns" class="text-gray-700 font-normal">Show MoM/YoY Changes</label>
+                </div>
+
+                <div class="filter-group filter-checkbox-group">
+                    <input type="checkbox" id="showSummaryMetrics" class="rounded text-indigo-600 focus:ring-indigo-500">
+                    <label for="showSummaryMetrics" class="text-gray-700 font-normal">Show Summary Statistics</label>
+                </div>
+
+                <div class="filter-group filter-checkbox-group">
+                    <input type="checkbox" id="showAnomalyDetection" class="rounded text-red-600 focus:ring-red-500">
+                    <label for="showAnomalyDetection" class="text-gray-700 font-normal">Enable Anomaly Detection</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="applyFilters" class="btn-primary">Apply Filters</button>
+                <button id="resetFiltersBtn" class="btn-secondary">Reset Filters</button>
+                <button id="downloadReportBtn" class="btn-secondary">Download Filtered Data (Excel)</button>
+                <button id="printReportBtn" class="btn-secondary">Print Report</button>
+            </div>
+        </div>
+
+        <div id="anomalyAlerts" class="anomaly-alerts hidden">
+            <h3>&#9888; Anomaly Alerts</h3>
+            <div id="anomalyList"></div>
+        </div>
+
+        <div id="summaryMetrics" class="summary-card hidden">
+            <h3 class="col-span-full text-center text-lg font-bold text-gray-800 mb-2">Summary Statistics (Filtered Data)</h3>
+            <div class="summary-item">
+                <strong>Overall Total Consumption:</strong> <span id="overallTotalConsumptionValue">0.00</span>
+            </div>
+        </div>
+
+        <div id="reportContainer" class="rounded-lg report-table-wrapper">
+            <table id="reportTable" class="report-table">
+                <thead>
+                    <tr id="tableHeaderTransformerRow">
+                    </tr>
+                    <tr id="tableHeaderMeterRow">
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="5" class="no-data">Loading data from Google Sheet...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="chartSection" class="chart-container hidden">
+            <canvas id="consumptionChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // *** IMPORTANT: This URL is your Google Apps Script Web App URL, which acts as a CORS proxy. ***
+        // It fetches the original Google Sheet CSV data and adds necessary CORS headers.
+        const GOOGLE_SHEET_CSV_URL = 'https://script.google.com/macros/s/AKfycbz7lidciBT-Yz4nesxZ1s23gDvnCMWxL60CpvENMUYorVtGoKBryb24zp-omMgPhjPszA/exec';
+        const TARGET_SHEET_NAME = 'Monthly_Summary'; // This might not be used directly when fetching CSV via Apps Script, but kept for context
+
+        let fullReportData = []; // Stores the entire parsed Google Sheet data with MoM/YoY
+        let rawReportData = []; // Stores the raw parsed Google Sheet data before MoM/YoY calculations
+        let availableMeters = []; // Stores the names of the consumption columns from the CSV headers
+
+        let myChart; // Chart.js instance
+
+        // Define the desired order of meters for display and chart labels
+        const desiredMeterOrder = [
+            'MAIN METER (T1) (Consumption)', 'CHECK METER (T1) (Consumption)',
+            'MAIN METER (T2) (Consumption)', 'CHECK METER (T2) (Consumption)',
+            'MAIN METER (T3) (Consumption)', 'CHECK METER (T3) (Consumption)',
+            'MAIN METER (T4) (Consumption)', 'CHECK METER (T4) (Consumption)'
+        ];
+
+        // Chart.js color palette for multiple datasets (more distinct colors)
+        const chartColors = [
+            'rgba(79, 70, 229, 0.8)',    // Indigo Main
+            'rgba(129, 140, 248, 0.8)', // Light Indigo Check
+            'rgba(234, 88, 12, 0.8)',    // Orange Main
+            'rgba(251, 146, 60, 0.8)',  // Light Orange Check
+            'rgba(6, 182, 212, 0.8)',    // Cyan Main
+            'rgba(45, 212, 191, 0.8)',  // Teal Check
+            'rgba(168, 85, 247, 0.8)',  // Purple Main
+            'rgba(192, 132, 252, 0.8)', // Light Purple Check
+            'rgba(244, 63, 94, 0.8)',    // Rose Main
+            'rgba(253, 164, 175, 0.8)'  // Light Rose Check
+        ];
+        const chartBorderColors = [
+            'rgba(79, 70, 229, 1)',
+            'rgba(129, 140, 248, 1)',
+            'rgba(234, 88, 12, 1)',
+            'rgba(251, 146, 60, 1)',
+            'rgba(6, 182, 212, 1)',
+            'rgba(45, 212, 191, 1)',
+            'rgba(168, 85, 247, 1)',
+            'rgba(192, 132, 252, 1)',
+            'rgba(244, 63, 94, 1)',
+            'rgba(253, 164, 175, 1)'
+        ];
+
+        // Anomaly detection threshold (percentage deviation from average of previous 3 months)
+        const ANOMALY_THRESHOLD_PERCENT = 20;  
+
+
+        // Assign DOM elements
+        const yearFilter = document.getElementById('yearFilter');
+        const monthSelectTrigger = document.getElementById('monthSelectTrigger');
+        const monthSelectOptions = document.getElementById('monthSelectOptions');
+        const monthSearchInput = document.getElementById('monthSearchInput');
+        const meterSelectTrigger = document.getElementById('meterSelectTrigger');
+        const meterSelectOptions = document.getElementById('meterSelectOptions');
+        const meterSearchInput = document.getElementById('meterSearchInput');
+        const chartTypeFilter = document.getElementById('chartTypeFilter');
+        const showChangeColumnsCheckbox = document.getElementById('showChangeColumns');
+        const showSummaryMetricsCheckbox = document.getElementById('showSummaryMetrics');
+        const showAnomalyDetectionCheckbox = document.getElementById('showAnomalyDetection');
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+        const downloadReportBtn = document.getElementById('downloadReportBtn');
+        const printReportBtn = document.getElementById('printReportBtn');
+        const reportTable = document.getElementById('reportTable');
+        const tableHeaderTransformerRow = document.getElementById('tableHeaderTransformerRow');
+        const tableHeaderMeterRow = document.getElementById('tableHeaderMeterRow');
+        const tableBody = document.getElementById('tableBody');
+        const messageArea = document.getElementById('messageArea');
+        const summaryMetrics = document.getElementById('summaryMetrics');
+        const overallTotalConsumptionValue = document.getElementById('overallTotalConsumptionValue');
+        const chartSection = document.getElementById('chartSection');
+        const consumptionChartCtx = document.getElementById('consumptionChart').getContext('2d');
+        const anomalyAlerts = document.getElementById('anomalyAlerts');
+        const anomalyList = document.getElementById('anomalyList');
+        const yearFilterGroup = document.getElementById('yearFilterGroup');
+        const monthFilterGroup = document.getElementById('monthFilterGroup');
+
+
+        function showMessage(msg, type = 'warning') {
+            messageArea.textContent = msg;
+            messageArea.className = `message-box ${type === 'error' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`;
+            messageArea.classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            messageArea.classList.add('hidden');
+        }
+
+        /**
+         * Calculates the linear regression trendline for a given set of data points.
+         * @param {Array<Object>} dataPoints - Array of objects with 'x' (numeric) and 'y' (numeric) properties.
+         * @returns {Array<Object>} Array of objects with 'x' and 'y' for the trendline.
+         */
+        function calculateLinearRegressionTrend(dataPoints) {
+            if (dataPoints.length < 2) return [];
+
+            const n = dataPoints.length;
+            let sumX = 0;
+            let sumY = 0;
+            let sumXY = 0;
+            let sumXX = 0;
+
+            for (let i = 0; i < n; i++) {
+                sumX += dataPoints[i].x;
+                sumY += dataPoints[i].y;
+                sumXY += dataPoints[i].x * dataPoints[i].y;
+                sumXX += dataPoints[i].x * dataPoints[i].x;
+            }
+
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY / n) - (slope * sumX) / n;
+
+            // Generate trendline points across the range of x values
+            const xMin = dataPoints[0].x;
+            const xMax = dataPoints[n - 1].x;
+
+            return [
+                { x: xMin, y: intercept + slope * xMin },
+                { x: xMax, y: intercept + slope * xMax }
+            ];
+        }
+
+        // Function to calculate MoM and YoY changes for the full dataset
+        function calculateMoMYoY(data) {
+            console.log("calculateMoMYoY: Starting with data length", data.length);
+            // Sort data by month to ensure correct previous/year-ago lookup
+            data.sort((a, b) => new Date(a.Month) - new Date(b.Month));
+
+            const dataMap = new Map(data.map(row => [row.Month, row]));
+            console.log("calculateMoMYoY: dataMap created.");
+
+            const processedData = data.map(row => {
+                const currentDate = new Date(row.Month + '-01'); // Add -01 to make it a valid date for calculations
+                const currentMonthStr = row.Month;
+
+                const prevMonthDate = new Date(currentDate);
+                prevMonthDate.setMonth(currentDate.getMonth() - 1);
+                const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;
+                const prevMonthRow = dataMap.get(prevMonthStr);
+
+                const yearAgoDate = new Date(currentDate);
+                yearAgoDate.setFullYear(currentDate.getFullYear() - 1);
+                const yearAgoMonthStr = `${yearAgoDate.getFullYear()}-${String(yearAgoDate.getMonth() + 1).padStart(2, '0')}`;
+                const yearAgoMonthRow = dataMap.get(yearAgoMonthStr);
+
+                const newRow = { ...row };
+
+                availableMeters.forEach(meter => {
+                    const currentConsumption = parseFloat(row[meter]);
+                    
+                    newRow[`${meter} MoM Change`] = 'N/A';
+                    if (prevMonthRow && !isNaN(currentConsumption)) {
+                        const prevConsumption = parseFloat(prevMonthRow[meter]);
+                        if (!isNaN(prevConsumption)) {
+                            if (prevConsumption !== 0) {
+                                const momChange = ((currentConsumption - prevConsumption) / prevConsumption) * 100;
+                                newRow[`${meter} MoM Change`] = momChange.toFixed(2) + '%';
+                            } else if (currentConsumption !== 0) {
+                                newRow[`${meter} MoM Change`] = 'Inf%';
+                            } else {
+                                newRow[`${meter} MoM Change`] = '0.00%';
+                            }
+                        }
+                    }
+
+                    newRow[`${meter} YoY Change`] = 'N/A';
+                    if (yearAgoMonthRow && !isNaN(currentConsumption)) {
+                        const yearAgoConsumption = parseFloat(yearAgoMonthRow[meter]);
+                        if (!isNaN(yearAgoConsumption)) {
+                            if (yearAgoConsumption !== 0) {
+                                const yoyChange = ((currentConsumption - yearAgoConsumption) / yearAgoConsumption) * 100;
+                                newRow[`${meter} YoY Change`] = yoyChange.toFixed(2) + '%';
+                            } else if (currentConsumption !== 0) {
+                                newRow[`${meter} YoY Change`] = 'Inf%';
+                            } else {
+                                newRow[`${meter} YoY Change`] = '0.00%';
+                            }
+                        }
+                    }
+                });
+                return newRow;
+            });
+            console.log("calculateMoMYoY: Finished processing data. Result length:", processedData.length);
+            return processedData;
+        }
+
+        // Function to populate filter dropdowns (including the custom month and meter dropdowns)
+        function populateFilters(data) {
+            console.log("populateFilters: Starting with data length", data.length);
+            const years = new Set(['All']);
+            const months = new Set();
+            
+            availableMeters = [];
+            if (data.length > 0) {
+                Object.keys(data[0]).forEach(key => {
+                    if (key.includes('(Consumption)') && key !== 'Month') { // Only add columns explicitly marked as (Consumption)
+                        availableMeters.push(key);
+                    }
+                });
+
+                availableMeters.sort((a, b) => {
+                    const indexA = desiredMeterOrder.indexOf(a);
+                    const indexB = desiredMeterOrder.indexOf(b);
+
+                    if (indexA === -1 && indexB === -1) return a.localeCompare(b); // Both not found, sort alphabetically
+                    if (indexA === -1) return 1; // A not found, move A to end
+                    if (indexB === -1) return -1; // B not found, move B to end
+                    return indexA - indexB; // Sort by desired order
+                });
+            }
+            console.log("populateFilters: availableMeters after sorting:", availableMeters);
+
+
+            data.forEach(row => {
+                const date = new Date(row.Month);
+                years.add(date.getFullYear().toString());
+                months.add(String(date.getMonth() + 1).padStart(2, '0'));
+            });
+            console.log("populateFilters: Years found:", Array.from(years));
+            console.log("populateFilters: Months found (raw):", Array.from(months));
+
+            const sortedYears = Array.from(years).sort((a, b) => {
+                if (a === 'All') return -1;
+                if (b === 'All') return 1;
+                return parseInt(a) - parseInt(b);
+            });
+            const sortedMonths = Array.from(months).sort((a, b) => {
+                if (a === 'All') return -1;
+                if (b === 'All') return 1;
+                return parseInt(a) - parseInt(b);
+            });
+            
+            yearFilter.innerHTML = sortedYears.map(year => `<option value="${year}">${year}</option>`).join('');
+
+            // Populate Custom Month Filter
+            monthSelectOptions.innerHTML = `<input type="text" id="monthSearchInput" class="search-input" placeholder="Search months...">`;
+            const allMonthOptionDiv = document.createElement('div');
+            allMonthOptionDiv.className = 'custom-select-option-item';
+            allMonthOptionDiv.innerHTML = `
+                <input type="checkbox" id="month_all" value="All">
+                <label for="month_all">All Months</label>
+            `;
+            monthSelectOptions.appendChild(allMonthOptionDiv);
+
+            sortedMonths.forEach(monthNum => {
+                if (monthNum === 'All') return; // Skip "All" as it's added separately
+                const monthName = new Date(2000, parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'custom-select-option-item';
+                optionDiv.innerHTML = `
+                    <input type="checkbox" id="month_${monthNum}" value="${monthNum}">
+                    <label for="month_${monthNum}">${monthName} (${monthNum})</label>
+                `;
+                monthSelectOptions.appendChild(optionDiv);
+            });
+
+            // Populate Custom Meter Filter
+            meterSelectOptions.innerHTML = `<input type="text" id="meterSearchInput" class="search-input" placeholder="Search meters...">`;
+            const allMeterOptionDiv = document.createElement('div');
+            allMeterOptionDiv.className = 'custom-select-option-item';
+            allMeterOptionDiv.innerHTML = `
+                <input type="checkbox" id="meter_all" value="All">
+                <label for="meter_all">All Meters</label>
+            `;
+            meterSelectOptions.appendChild(allMeterOptionDiv);
+
+            availableMeters.forEach(meter => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'custom-select-option-item';
+                optionDiv.innerHTML = `
+                    <input type="checkbox" id="meter_${meter.replace(/[^a-zA-Z0-9]/g, '_')}" value="${meter}">
+                    <label for="meter_${meter.replace(/[^a-zA-Z0-9]/g, '_')}">${meter}</label>
+                `;
+                meterSelectOptions.appendChild(optionDiv);
+            });
+
+            // Initialize select all/none behavior for months
+            document.getElementById('month_all').addEventListener('change', function() {
+                const isChecked = this.checked;
+                monthSelectOptions.querySelectorAll('input[type="checkbox"]:not(#month_all)').forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+                updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
+            });
+
+            // Initialize select all/none behavior for meters
+            document.getElementById('meter_all').addEventListener('change', function() {
+                const isChecked = this.checked;
+                meterSelectOptions.querySelectorAll('input[type="checkbox"]:not(#meter_all)').forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+                updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
+            });
+            
+            // Event listeners for individual checkboxes to deselect 'All' if one is unchecked
+            monthSelectOptions.querySelectorAll('input[type="checkbox"]:not(#month_all)').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    if (!checkbox.checked) {
+                        document.getElementById('month_all').checked = false;
+                    }
+                    updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
+                });
+            });
+
+            meterSelectOptions.querySelectorAll('input[type="checkbox']:not(#meter_all)').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    if (!checkbox.checked) {
+                        document.getElementById('meter_all').checked = false;
+                    }
+                    updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
+                });
+            });
+
+            // Set initial trigger text
+            updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
+            updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
+            console.log("populateFilters: Filters populated.");
+        }
+
+        function updateCustomSelectTriggerText(triggerElement, optionsElement, defaultText) {
+            const checkedCheckboxes = optionsElement.querySelectorAll('input[type="checkbox"]:checked:not([value="All"])');
+            const allCheckbox = optionsElement.querySelector('input[type="checkbox"][value="All"]');
+
+            if (allCheckbox && allCheckbox.checked) {
+                triggerElement.textContent = `All ${defaultText}`;
+            } else if (checkedCheckboxes.length > 0) {
+                const selectedNames = Array.from(checkedCheckboxes).map(cb => {
+                    // Extract text from label, excluding the (MM) part for months
+                    if (optionsElement.id === 'monthSelectOptions') {
+                        return cb.nextElementSibling.textContent.split(' ')[0];
+                    }
+                    return cb.value;
+                });
+                if (selectedNames.length > 2) {
+                    triggerElement.textContent = `${selectedNames.length} Selected`;
+                } else {
+                    triggerElement.textContent = selectedNames.join(', ');
+                }
+            } else {
+                triggerElement.textContent = `Select ${defaultText}`;
+            }
+        }
+
+        // Custom dropdown toggle logic
+        function setupCustomSelect(trigger, options, searchInput) {
+            trigger.addEventListener('click', () => {
+                options.classList.toggle('open');
+                trigger.classList.toggle('open');
+                if (options.classList.contains('open')) {
+                    searchInput.focus();
+                }
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!trigger.contains(event.target) && !options.contains(event.target)) {
+                    options.classList.remove('open');
+                    trigger.classList.remove('open');
+                }
+            });
+
+            // Search functionality
+            searchInput.addEventListener('keyup', () => {
+                const filter = searchInput.value.toLowerCase();
+                options.querySelectorAll('.custom-select-option-item:not(:first-child)').forEach(item => { // Exclude 'All' option
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(filter) ? '' : 'none';
+                });
+            });
+        }
+
+
+        // Function to filter data based on selected criteria
+        function filterData() {
+            console.log("filterData: Starting filtering...");
+            const selectedYear = yearFilter.value;
+            const selectedMonths = Array.from(monthSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
+                                      .filter(cb => cb.value !== 'All')
+                                      .map(cb => cb.value);
+            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
+                                     .filter(cb => cb.value !== 'All')
+                                     .map(cb => cb.value);
+            
+            console.log("Selected Year:", selectedYear);
+            console.log("Selected Months:", selectedMonths);
+            console.log("Selected Meters:", selectedMeters);
+
+            if (selectedMonths.length === 0 || selectedMeters.length === 0) {
+                showMessage("Please select at least one month and one meter to generate the report.");
+                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Please select filters and apply.</td></tr>';
+                summaryMetrics.classList.add('hidden');
+                chartSection.classList.add('hidden');
+                anomalyAlerts.classList.add('hidden');
+                return [];
+            } else {
+                hideMessage();
+            }
+
+            let filtered = fullReportData.filter(row => {
+                const rowDate = new Date(row.Month);
+                const rowYear = rowDate.getFullYear().toString();
+                const rowMonth = String(rowDate.getMonth() + 1).padStart(2, '0');
+
+                const yearMatch = selectedYear === 'All' || rowYear === selectedYear;
+                const monthMatch = selectedMonths.includes(rowMonth);
+                
+                return yearMatch && monthMatch;
+            });
+            console.log("filterData: Data filtered by Year and Month. Result length:", filtered.length);
+
+            // Filter out rows where all selected meters have empty or non-numeric values
+            filtered = filtered.filter(row => {
+                return selectedMeters.some(meter => {
+                    const value = parseFloat(row[meter]);
+                    return !isNaN(value); // Keep row if at least one selected meter has a valid number
+                });
+            });
+            console.log("filterData: Data filtered by valid meter values. Result length:", filtered.length);
+
+            return filtered;
+        }
+
+        // Function to render the table with filtered data
+        function renderTable(data) {
+            console.log("renderTable: Starting with data length", data.length);
+            tableBody.innerHTML = '';
+            tableHeaderTransformerRow.innerHTML = '';
+            tableHeaderMeterRow.innerHTML = '';
+
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No data available for the selected filters.</td></tr>';
+                chartSection.classList.add('hidden');
+                summaryMetrics.classList.add('hidden');
+                anomalyAlerts.classList.add('hidden');
+                return;
+            }
+
+            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
+                                     .filter(cb => cb.value !== 'All')
+                                     .map(cb => cb.value);
+
+            const showChanges = showChangeColumnsCheckbox.checked;
+            const enableAnomaly = showAnomalyDetectionCheckbox.checked;
+
+            // --- Construct Table Headers ---
+            // Month header
+            const monthHeader = document.createElement('th');
+            monthHeader.textContent = 'Month';
+            monthHeader.rowSpan = 2; // Spans two rows
+            monthHeader.className = 'month-header'; // Add class for styling
+            tableHeaderTransformerRow.appendChild(monthHeader);
+
+            // Group meters by transformer for top row header
+            const transformerGroups = {};
+            selectedMeters.forEach(meter => {
+                const transformerMatch = meter.match(/T(\d+)/);
+                const transformerName = transformerMatch ? `Transformer ${transformerMatch[1]}` : 'Other Meters';
+                if (!transformerGroups[transformerName]) {
+                    transformerGroups[transformerName] = [];
+                }
+                transformerGroups[transformerName].push(meter);
+            });
+            console.log("renderTable: Transformer Groups:", transformerGroups);
+
+            // Transformer Row (Top Header)
+            for (const transformerName of Object.keys(transformerGroups).sort()) { // Sort transformer names
+                const th = document.createElement('th');
+                th.textContent = transformerName;
+                th.colSpan = showChanges ? transformerGroups[transformerName].length * 3 : transformerGroups[transformerName].length; // Consumption + MoM + YoY
+                th.className = 'transformer-row th'; // Add class for styling
+                tableHeaderTransformerRow.appendChild(th);
+            }
+
+            // Meter Row (Second Header)
+            // Add an empty th for the Month column in the second header row (to align columns)
+            tableHeaderMeterRow.innerHTML = '<th></th>'; // Placeholder for the Month column's alignment
+
+            for (const transformerName of Object.keys(transformerGroups).sort()) {
+                transformerGroups[transformerName].forEach(meter => {
+                    const meterTh = document.createElement('th');
+                    meterTh.textContent = meter.replace(' (Consumption)', ''); // Clean up meter name for display
+                    meterTh.className = 'meter-row th'; // Add class for styling
+                    tableHeaderMeterRow.appendChild(meterTh);
+
+                    if (showChanges) {
+                        const momTh = document.createElement('th');
+                        momTh.textContent = 'MoM %';
+                        momTh.className = 'meter-row th';
+                        tableHeaderMeterRow.appendChild(momTh);
+
+                        const yoyTh = document.createElement('th');
+                        yoyTh.textContent = 'YoY %';
+                        yoyTh.className = 'meter-row th';
+                        tableHeaderMeterRow.appendChild(yoyTh);
+                    }
+                });
+            }
+
+            // --- Populate Table Body ---
+            let anomaliesFound = [];
+
+            data.forEach((rowData, index) => {
+                const row = document.createElement('tr');
+                const monthTd = document.createElement('td');
+                monthTd.textContent = rowData.Month;
+                row.appendChild(monthTd);
+
+                selectedMeters.forEach(meter => {
+                    const consumptionValue = parseFloat(rowData[meter]);
+                    const consumptionTd = document.createElement('td');
+                    consumptionTd.textContent = !isNaN(consumptionValue) ? consumptionValue.toFixed(2) : 'N/A';
+                    
+                    // Anomaly Detection and Highlighting
+                    if (enableAnomaly && !isNaN(consumptionValue) && index >= 3) { // Need at least 3 previous months for average
+                        const monthIndex = fullReportData.findIndex(d => d.Month === rowData.Month);
+                        const meterIndexInAvailable = availableMeters.indexOf(meter);
+
+                        if (monthIndex > -1 && meterIndexInAvailable > -1) {
+                            const relevantDataPoints = [];
+                            for (let i = monthIndex - 1; i >= 0 && relevantDataPoints.length < 3; i--) {
+                                const prevConsumption = parseFloat(fullReportData[i][meter]);
+                                if (!isNaN(prevConsumption)) {
+                                    relevantDataPoints.push(prevConsumption);
+                                }
+                            }
+
+                            if (relevantDataPoints.length === 3) {
+                                const average = relevantDataPoints.reduce((sum, val) => sum + val, 0) / 3;
+                                const deviation = ((consumptionValue - average) / average) * 100;
+
+                                if (Math.abs(deviation) > ANOMALY_THRESHOLD_PERCENT) {
+                                    consumptionTd.classList.add('anomaly-highlight');
+                                    anomaliesFound.push({
+                                        month: rowData.Month,
+                                        meter: meter.replace(' (Consumption)', ''),
+                                        value: consumptionValue.toFixed(2),
+                                        deviation: deviation.toFixed(2),
+                                        average: average.toFixed(2)
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    row.appendChild(consumptionTd);
+
+                    if (showChanges) {
+                        const momChange = rowData[`${meter} MoM Change`];
+                        const momTd = document.createElement('td');
+                        momTd.textContent = momChange;
+                        if (momChange.endsWith('%') && momChange !== 'N/A' && momChange !== 'Inf%') {
+                            const momVal = parseFloat(momChange);
+                            if (momVal > 0) momTd.classList.add('positive-change');
+                            else if (momVal < 0) momTd.classList.add('negative-change');
+                            else momTd.classList.add('no-change');
+                        }
+                        row.appendChild(momTd);
+
+                        const yoyChange = rowData[`${meter} YoY Change`];
+                        const yoyTd = document.createElement('td');
+                        yoyTd.textContent = yoyChange;
+                        if (yoyChange.endsWith('%') && yoyChange !== 'N/A' && yoyChange !== 'Inf%') {
+                            const yoyVal = parseFloat(yoyChange);
+                            if (yoyVal > 0) yoyTd.classList.add('positive-change');
+                            else if (yoyVal < 0) yoyTd.classList.add('negative-change');
+                            else yoyTd.classList.add('no-change');
+                        }
+                        row.appendChild(yoyTd);
+                    }
+                });
+                tableBody.appendChild(row);
+            });
+            console.log("renderTable: Table rows populated.");
+
+            // Display Anomaly Alerts
+            if (enableAnomaly && anomaliesFound.length > 0) {
+                anomalyList.innerHTML = '';
+                anomaliesFound.forEach(anomaly => {
+                    const alertItem = document.createElement('div');
+                    alertItem.className = 'anomaly-item';
+                    alertItem.textContent = `Meter: ${anomaly.meter}, Month: ${anomaly.month}, Value: ${anomaly.value} (Deviation: ${anomaly.deviation}% from avg ${anomaly.average})`;
+                    anomalyList.appendChild(alertItem);
+                });
+                anomalyAlerts.classList.remove('hidden');
+            } else {
+                anomalyAlerts.classList.add('hidden');
+            }
+        }
+
+        // Function to calculate and display summary metrics
+        function renderSummaryMetrics(data) {
+            console.log("renderSummaryMetrics: Starting with data length", data.length);
+            if (!showSummaryMetricsCheckbox.checked || data.length === 0) {
+                summaryMetrics.classList.add('hidden');
+                return;
+            }
+
+            summaryMetrics.classList.remove('hidden');
+            let overallTotal = 0;
+            const meterTotals = {};
+            const meterAverages = {};
+            const meterMax = {};
+            const meterMin = {};
+
+            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
+                                     .filter(cb => cb.value !== 'All')
+                                     .map(cb => cb.value);
+
+            selectedMeters.forEach(meter => {
+                meterTotals[meter] = 0;
+                meterMax[meter] = -Infinity;
+                meterMin[meter] = Infinity;
+            });
+
+            data.forEach(row => {
+                selectedMeters.forEach(meter => {
+                    const value = parseFloat(row[meter]);
+                    if (!isNaN(value)) {
+                        overallTotal += value;
+                        meterTotals[meter] += value;
+                        if (value > meterMax[meter]) meterMax[meter] = value;
+                        if (value < meterMin[meter]) meterMin[meter] = value;
+                    }
+                });
+            });
+
+            overallTotalConsumptionValue.textContent = overallTotal.toFixed(2);
+
+            // Clear previous meter specific summaries
+            summaryMetrics.querySelectorAll('.summary-item:not(#overallTotalConsumptionValue)').forEach(item => {
+                if (item.id !== 'overallTotalConsumptionValueContainer') { // Ensure we don't remove the overall total
+                    item.remove();
+                }
+            });
+
+
+            selectedMeters.forEach(meter => {
+                const count = data.filter(row => !isNaN(parseFloat(row[meter]))).length;
+                meterAverages[meter] = count > 0 ? (meterTotals[meter] / count).toFixed(2) : 'N/A';
+                
+                const meterSummaryDiv = document.createElement('div');
+                meterSummaryDiv.className = 'summary-item';
+                meterSummaryDiv.innerHTML = `
+                    <strong>${meter.replace(' (Consumption)', '')}:</strong><br>
+                    Total: ${meterTotals[meter].toFixed(2)}<br>
+                    Avg: ${meterAverages[meter]}<br>
+                    Max: ${meterMax[meter] === -Infinity ? 'N/A' : meterMax[meter].toFixed(2)}<br>
+                    Min: ${meterMin[meter] === Infinity ? 'N/A' : meterMin[meter].toFixed(2)}
+                `;
+                summaryMetrics.appendChild(meterSummaryDiv);
+            });
+            console.log("renderSummaryMetrics: Summary metrics updated.");
+        }
+
+
+        // Function to render the chart
+        function renderChart(data) {
+            console.log("renderChart: Starting with data length", data.length);
+            chartSection.classList.remove('hidden');
+
+            if (myChart) {
+                myChart.destroy(); // Destroy existing chart before creating a new one
+            }
+
+            if (data.length === 0) {
+                chartSection.classList.add('hidden'); // Hide chart if no data
+                return;
+            }
+
+            const chartType = chartTypeFilter.value;
+            const labels = data.map(row => row.Month); // X-axis labels
+            const datasets = [];
+
+            const selectedMeters = Array.from(meterSelectOptions.querySelectorAll('input[type="checkbox"]:checked'))
+                                     .filter(cb => cb.value !== 'All')
+                                     .map(cb => cb.value);
+            
+            selectedMeters.forEach((meter, index) => {
+                const consumptionValues = data.map(row => parseFloat(row[meter]));
+                datasets.push({
+                    label: meter.replace(' (Consumption)', ''),
+                    data: consumptionValues,
+                    borderColor: chartBorderColors[index % chartBorderColors.length],
+                    backgroundColor: chartColors[index % chartColors.length],
+                    fill: chartType === 'line' ? false : true, // Fill only for area/bar charts
+                    tension: 0.1, // Smooth lines for line charts
+                    pointRadius: 3,
+                    pointHoverRadius: 5
+                });
+            });
+
+            // Add trendlines for line chart
+            if (chartType === 'line' && selectedMeters.length === 1) { // Only show trendline for single meter on line chart
+                const meter = selectedMeters[0];
+                const dataPointsForTrend = data.map((row, idx) => ({
+                    x: idx, // Use index as x-coordinate for linear regression
+                    y: parseFloat(row[meter])
+                })).filter(point => !isNaN(point.y));
+
+                if (dataPointsForTrend.length >= 2) {
+                    const trendlineData = calculateLinearRegressionTrend(dataPointsForTrend);
+                    
+                    // Map x-indices back to month labels for Chart.js
+                    const trendlineLabels = [labels[trendlineData[0].x], labels[trendlineData[1].x]];
+                    const trendlineValues = [trendlineData[0].y, trendlineData[1].y];
+
+                    datasets.push({
+                        label: `${meter.replace(' (Consumption)', '')} Trendline`,
+                        data: trendlineValues,
+                        borderColor: 'rgba(0, 0, 0, 0.5)', // Darker color for trendline
+                        borderDash: [5, 5], // Dashed line
+                        fill: false,
+                        pointRadius: 0,
+                        type: 'line', // Ensure it's drawn as a line
+                        xAxisID: 'x', // Link to the same X-axis
+                        yAxisID: 'y'  // Link to the same Y-axis
+                    });
+                }
+            }
+
+
+            myChart = new Chart(consumptionChartCtx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Electricity Consumption Over Time',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#333'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(2) + ' kWh';
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Consumption (kWh)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                }
+            });
+            console.log("renderChart: Chart rendered.");
+        }
+
+        // Main function to fetch and process data
+        async function fetchDataAndRender() {
+            tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Fetching data from Google Sheet...</td></tr>';
+            try {
+                console.log(`Attempting to fetch data from: ${GOOGLE_SHEET_CSV_URL}`);
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvData = await response.text();
+                console.log("CSV Data fetched successfully. Length:", csvData.length);
+                console.log("CSV Data (first 500 chars):", csvData.substring(0, 500));
+
+
+                // Parse CSV using SheetJS
+                const workbook = XLSX.read(csvData, { type: 'string' });
+                console.log("Workbook read successfully.");
+                console.log("Sheet names found:", workbook.SheetNames);
+                
+                // For CSV, usually there's only one sheet, typically at index 0
+                const sheetName = workbook.SheetNames[0]; 
+                if (!sheetName) {
+                    throw new Error(`No sheets found in the workbook parsed from CSV.`);
+                }
+                console.log(`Using sheet name: "${sheetName}" for parsing.`);
+                const worksheet = workbook.Sheets[sheetName];
+                console.log("Worksheet:", worksheet); // Log the worksheet object
+
+                // Changed: Removed `header: 1` and `range` to get raw array of arrays.
+                // We will manually extract headers from the first row of `jsonDataRaw`.
+                const jsonOptions = { 
+                    header: 'A', // SheetJS option to output an array of arrays (A for Array)
+                    raw: false, 
+                    defval: null
+                }; 
+                let jsonDataRaw = XLSX.utils.sheet_to_json(worksheet, jsonOptions);
+                console.log("jsonDataRaw from sheet_to_json (first 2 rows):", jsonDataRaw.slice(0,2));
+
+
+                if (jsonDataRaw.length < 2) { // Less than 2 rows means only headers or no data
+                    showMessage("No data or only headers found in the Google Sheet. Please check the sheet content.", 'error');
+                    tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No data found in the Google Sheet.</td></tr>';
+                    return;
+                }
+
+                // Manually extract headers and raw data rows
+                const headers = jsonDataRaw[0]; // First array is headers
+                rawReportData = jsonDataRaw.slice(1).map(row => { // Slice from 1 to get actual data rows
+                    const rowObject = {};
+                    headers.forEach((header, index) => {
+                        rowObject[header] = row[index];
+                    });
+                    return rowObject;
+                });
+                console.log("Raw data parsed. First row example:", rawReportData[0]);
+                console.log("Total raw data rows:", rawReportData.length);
+
+                fullReportData = calculateMoMYoY(rawReportData);
+                console.log("MoM/YoY calculated. First row example (after MoM/YoY):", fullReportData[0]);
+
+
+                populateFilters(fullReportData);
+                resetFilters(); // <--- Call resetFilters AFTER filters are populated. This will tick 'All'
+                
+            } catch (error) {
+                console.error('Error fetching or processing data:', error);
+                showMessage(`Failed to load data: ${error.message}. Please ensure the Google Sheet is published to CSV, the URL is correct, and your CSV structure matches the expected format ("Month" column, "Consumption" columns).`, 'error');
+                tableBody.innerHTML = '<tr><td colspan="5" class="no-data">Failed to load data. See console for details.</td></tr>';
+            }
+        }
+
+        function applyFilters() {
+            const filteredData = filterData();
+            renderTable(filteredData);
+            renderSummaryMetrics(filteredData);
+            renderChart(filteredData);
+        }
+
+        function resetFilters() {
+            // Reset Year filter to 'All'
+            yearFilter.value = 'All';
+
+            // Reset Month multi-select
+            monthSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            const allMonthsCheckbox = document.getElementById('month_all');
+            if (allMonthsCheckbox) allMonthsCheckbox.checked = true; // Select 'All Months' by default on reset
+            updateCustomSelectTriggerText(monthSelectTrigger, monthSelectOptions, 'Months');
+            monthSearchInput.value = ''; // Clear search input
+            monthSelectOptions.querySelectorAll('.custom-select-option-item').forEach(item => item.style.display = ''); // Show all items
+
+            // Reset Meter multi-select
+            meterSelectOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            const allMetersCheckbox = document.getElementById('meter_all');
+            if (allMetersCheckbox) allMetersCheckbox.checked = true; // Select 'All Meters' by default on reset
+            updateCustomSelectTriggerText(meterSelectTrigger, meterSelectOptions, 'Meters');
+            meterSearchInput.value = ''; // Clear search input
+            meterSelectOptions.querySelectorAll('.custom-select-option-item').forEach(item => item.style.display = ''); // Show all items
+
+
+            // Reset other checkboxes
+            showChangeColumnsCheckbox.checked = false;
+            showSummaryMetricsCheckbox.checked = false;
+            showAnomalyDetectionCheckbox.checked = false;
+
+            // Reset Chart Type
+            chartTypeFilter.value = 'line';
+
+            // Apply filters to refresh the report
+            applyFilters();
+        }
+
+        // Function to download data as Excel
+        function downloadReport() {
+            const dataToDownload = filterData(); // Get currently filtered data
+
+            if (dataToDownload.length === 0) {
+                showMessage("No data to download based on current filters.");
+                return;
+            }
+
+            // Create a worksheet from the filtered JSON data
+            const ws = XLSX.utils.json_to_sheet(dataToDownload);
+
+            // Create a workbook and add the worksheet
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Electricity Report");
+
+            // Write and download the Excel file
+            XLSX.writeFile(wb, "Electricity_Consumption_Report.xlsx");
+            showMessage("Report downloaded successfully!", 'success');
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDataAndRender();
+            
+            setupCustomSelect(monthSelectTrigger, monthSelectOptions, monthSearchInput);
+            setupCustomSelect(meterSelectTrigger, meterSelectOptions, meterSearchInput);
+
+            applyFiltersBtn.addEventListener('click', applyFilters);
+            resetFiltersBtn.addEventListener('click', resetFilters);
+            downloadReportBtn.addEventListener('click', downloadReport);
+            printReportBtn.addEventListener('click', () => window.print());
+        });
+
+    </script>
+</body>
+</html>
