@@ -489,8 +489,9 @@
     </div>
 
     <script>
-        // *** IMPORTANT: This URL must be the 'pub?output=csv' link from your PUBLISHED 'Electricity Monthly Report' sheet ***
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7TH2d1i7eiKF7v6LkljyTUg7woKSUtnkNVkNYN7auNeysOnUqGiwwUEVl-WhjqsC-AtTrT3jJA_vw/pub?gid=1944316564&single=true&output=csv';
+        // *** IMPORTANT: This URL is now routed through a CORS proxy to bypass potential Google Sheets restrictions. ***
+        // Original Google Sheet CSV URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7TH2d1i7eiKF7v6LkljyTUg7woKSUtnkNVkNYN7auNeysOnUqGiwwUEVl-WhjqsC-AtTrT3jJA_vw/pub?gid=1944316564&single=true&output=csv';
+        const GOOGLE_SHEET_CSV_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vR7TH2d1i7eiKF7v6LkljyTUg7woKSUtnkNVkNYN7auNeysOnUqGiwwUEVl-WhjqsC-AtTrT3jJA_vw/pub?gid=1944316564&single=true&output=csv');
         const TARGET_SHEET_NAME = 'Monthly_Summary'; // The exact name of your sheet with data (Note: for CSV, this might not be used directly by XLSX.read)
 
         let fullReportData = []; // Stores the entire parsed Google Sheet data with MoM/YoY
